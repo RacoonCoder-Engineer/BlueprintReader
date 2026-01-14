@@ -6,15 +6,15 @@
 #include "Core/BPR_Core.h"
 
 /**
- * Экстрактор для Blueprint Interface
- */
+* Extractor for Blueprint Interface
+*/
 class BLUEPRINTREADER_API BPR_Extractor_InterfaceBP
 {
 public:
 	BPR_Extractor_InterfaceBP();
 	~BPR_Extractor_InterfaceBP();
 
-	/** Основной метод извлечения данных */
+	/** Main data retrieval method */
 	void ProcessInterfaceBP(
 	UObject* Object,
 	FBPR_ExtractedData& OutData

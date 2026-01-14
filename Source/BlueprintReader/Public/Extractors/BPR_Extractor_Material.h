@@ -10,12 +10,12 @@ class UMaterialInstance;
 class UMaterialExpression;
 
 /**
- * Экстрактор для Material и MaterialInstance.
- * Преобразует Material Graph в текстовое представление:
- *  - структуру материала
- *  - параметры
- *  - граф зависимостей от Material Outputs
- */
+* Extractor for Material and MaterialInstance.
+* Converts the Material Graph into a text representation:
+* - material structure
+* - parameters
+* - dependency graph of Material Outputs
+*/
 class BLUEPRINTREADER_API BPR_Extractor_Material
 {
 public:
@@ -24,42 +24,42 @@ public:
     ~BPR_Extractor_Material();
 
     // -------------------------------
-    // Главная точка входа
+    // Main entry point
     // -------------------------------
-    /** Обрабатывает выбранный объект (Material или MaterialInstance) */
+    /** Processes the selected object (Material or MaterialInstance) */
     void ProcessMaterial(UObject* SelectedObject, FBPR_ExtractedData& OutData);
 
 private:
 
-    // -------------------------------
-    // Логирование
+    // ------------------------------- 
+    // Logging 
     // -------------------------------
     void LogMessage(const FString& Msg);
     void LogWarning(const FString& Msg);
     void LogError(const FString& Msg);
 
     // -------------------------------
-    // Структура материала (декларативная часть)
+    // Material structure (declarative part)
     // -------------------------------
-    /** Общая информация о материале (Domain, BlendMode, ShadingModel и т.д.) */
+    /** General information about the material (Domain, BlendMode, ShadingModel, etc.) */
     void AppendMaterialInfo(UMaterial* Material, FString& OutText);
 
-    /** Параметры материала (Scalar / Vector / Texture / Static Switch) */
+    /** Material Parameters (Scalar / Vector / Texture / Static Switch) */
     void AppendMaterialParameters(UMaterial* Material, FString& OutText);
 
-    /** Информация о MaterialInstance и его родителе */
+    /** Information about the MaterialInstance and its parent */
     void AppendMaterialInstanceInfo(UMaterialInstance* Instance, FString& OutText);
 
-    /** Переопределённые параметры инстанса */
+    /** Overridden instance parameters */
     void AppendMaterialInstanceOverrides(UMaterialInstance* Instance, FString& OutText);
 
     // -------------------------------
-    // Граф материала (вычислительная часть)
+    // Material graph (computational part)
     // -------------------------------
-    /** Точка входа обхода графа — все Material Outputs */
+    /** Graph traversal entry point — all Material Outputs */
     void AppendMaterialGraph(UMaterial* Material, FString& OutText);
 
-    /** Обрабатывает конкретный Material Output (BaseColor, Normal, etc.) */
+    /** Handles a specific Material Output (BaseColor, Normal, etc.) */
     void AppendMaterialOutput(
     const FString& OutputName,
     const TArray<UMaterialExpression*>& DirectExpressions,
@@ -67,9 +67,8 @@ private:
     TMap<UMaterialExpression*, int32>& NodeIds,
     TMap<int32, FString>& NodeTexts,
     int32& NextId);
-
     
-    /** Рекурсивный обход Expression-графа (data-flow) */
+    /** Recursive traversal of the Expression graph (data-flow) */
     void ProcessExpressionDAG(
     UMaterialExpression* Expression,
     TMap<UMaterialExpression*, int32>& NodeIds,
@@ -80,37 +79,35 @@ private:
     // -------------------------------
     // Expression / Input helpers
     // -------------------------------
-    /** Читабельное имя Expression (тип + ключевые параметры) */
+    /** Expression human-readable name (type + keywords) */
     FString GetReadableExpressionName(UMaterialExpression* Expression);
 
-    /** Детализация входных пинов Expression */
-    FString GetExpressionInputs(UMaterialExpression* Expression, int32 IndentLevel);
-
-    /** Значение входа: связь или дефолт */
+    /** Input value: link or default */
     FString GetInputValueDescription(const struct FExpressionInput& Input);
 
-    /** Проверка: есть ли у Expression входящие связи */
+    /** Check if Expression has any incoming relationships */
     bool HasAnyInputs(UMaterialExpression* Expression);
-    
+
+    /** Returns readable node name with ID for graph output */
     FString GetReadableNodeName(UMaterialExpression* Expr, int32 NodeId);
-    
+
     // -------------------------------
-    // Вспомогательные методы
+    // Helper Methods
     // -------------------------------
-    /** Очистка имён от технических суффиксов */
+    /** Clearing names of technical suffixes */
     FString CleanName(const FString& RawName);
 
-    /** Отступы для визуального отображения графа */
+    /** Indents for visual display of the graph */
     FString MakeIndent(int32 Level);
-    
+
+    /** Checks if expression is transparent (pass-through) node like Reroute */
     bool IsTransparentExpression(UMaterialExpression* Expr);
+
+    /** Checks if expression is a logical data source (TextureSample, Parameter, etc.) */
+    bool IsLogicalSourceExpression(UMaterialExpression* Expr);
     
-    bool IsLogicalSourceExpression(
-    UMaterialExpression* Expr
-);
-    
-    // Возвращает первый НЕ-прозрачный expression вверх по цепочке
-    // Может вернуть nullptr, если цепочка оборвана или зациклена
+    // Returns the first non-transparent expression up the chain
+    // May return nullptr if the chain is broken or loops
     UMaterialExpression* ResolveExpression(UMaterialExpression* Expr);
 
 };

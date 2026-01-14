@@ -286,7 +286,7 @@ void BPR_Extractor_ActorComponent::AppendGraphs(UBlueprint* Blueprint, FString& 
 //---------------------------------------------
 // Find Entry/Result Nodes
 //---------------------------------------------
-static UK2Node_FunctionEntry* FindFunctionEntryNodeInGraph(UEdGraph* Graph)
+UK2Node_FunctionEntry* BPR_Extractor_ActorComponent::FindFunctionEntryNodeInGraph(UEdGraph* Graph)
 {
     if (!Graph) return nullptr;
     for (UEdGraphNode* Node : Graph->Nodes)
@@ -297,7 +297,7 @@ static UK2Node_FunctionEntry* FindFunctionEntryNodeInGraph(UEdGraph* Graph)
     return nullptr;
 }
 
-static UK2Node_FunctionResult* FindFunctionResultNodeInGraph(UEdGraph* Graph)
+UK2Node_FunctionResult* BPR_Extractor_ActorComponent::FindFunctionResultNodeInGraph(UEdGraph* Graph)
 {
     if (!Graph) return nullptr;
     for (UEdGraphNode* Node : Graph->Nodes)

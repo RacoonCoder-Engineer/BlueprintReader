@@ -13,13 +13,12 @@ void SBPR_TextWidget::Construct(const FArguments& InArgs)
 
     ChildSlot
     [
-        // IMPORTANT: We use your custom ScrollBox, which does NOT handle Ctrl+Wheel
         SAssignNew(ScrollBox, SBPR_ScrollBox)
         .Orientation(EOrientation::Orient_Vertical)
         [
             SAssignNew(MultiLineText, SMultiLineEditableText)
             .Text(FText::FromString("Waiting for data..."))
-            .Font(FSlateFontInfo(FPaths::EngineContentDir() / TEXT("Slate/Fonts/Roboto-Regular.ttf"), BaseFontSize))
+            .Font(FCoreStyle::GetDefaultFontStyle("Regular", BaseFontSize))
             .IsReadOnly(true)
             .AutoWrapText(true)
             .AllowContextMenu(true)

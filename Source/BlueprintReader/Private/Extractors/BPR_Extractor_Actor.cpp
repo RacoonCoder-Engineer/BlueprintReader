@@ -5,10 +5,10 @@
 #include "UObject/UnrealType.h"
 #include "EdGraph/EdGraph.h"
 #include "EdGraphSchema_K2.h"
-#include "K2Node_Event.h"
-#include "K2Node_CustomEvent.h"
 #include "K2Node_FunctionEntry.h"
 #include "K2Node_FunctionResult.h"
+#include "K2Node_Event.h"
+#include "K2Node_CustomEvent.h"
 #include "K2Node_CallFunction.h"
 #include "K2Node_CallDelegate.h"
 #include "K2Node_IfThenElse.h"
@@ -29,7 +29,7 @@
 //==============================================================================
 // Helper functions for searching Entry/Result nodes
 //==============================================================================
-static UK2Node_FunctionEntry* FindFunctionEntryNodeInGraph(UEdGraph* Graph)
+UK2Node_FunctionEntry* BPR_Extractor_Actor::FindFunctionEntryNodeInGraph(UEdGraph* Graph)
 {
     if (!Graph) return nullptr;
     for (UEdGraphNode* Node : Graph->Nodes)
@@ -40,7 +40,7 @@ static UK2Node_FunctionEntry* FindFunctionEntryNodeInGraph(UEdGraph* Graph)
     return nullptr;
 }
 
-static UK2Node_FunctionResult* FindFunctionResultNodeInGraph(UEdGraph* Graph)
+UK2Node_FunctionResult* BPR_Extractor_Actor::FindFunctionResultNodeInGraph(UEdGraph* Graph)
 {
     if (!Graph) return nullptr;
     for (UEdGraphNode* Node : Graph->Nodes)

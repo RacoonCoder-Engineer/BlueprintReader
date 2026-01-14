@@ -11,84 +11,89 @@ class UBlueprint;
 class UEdGraph;
 class UEdGraphNode;
 class UEdGraphPin;
+class K2Node_FunctionEntry;
+class K2Node_FunctionResult;
+
+class UK2Node_FunctionEntry;
+class UK2Node_FunctionResult;
 
 /**
- * Экстрактор для Actor Blueprint.
- * Собирает информацию о классе, переменных, компонентах, тегах и графах.
- * Результат возвращается в Core через FText.
- */
+* Extractor for Actor Blueprint.
+* Collects information about classes, technologies, components, tags, and graphs.
+* The result is returned to the core via FText.
+*/
 class BLUEPRINTREADER_API BPR_Extractor_Actor
 {
 public:
     BPR_Extractor_Actor();
     ~BPR_Extractor_Actor();
 
+    // --------------------------------
+    // Main entry point
     // -------------------------------
-    // Главная точка входа
-    // -------------------------------
-    /** Обрабатывает выбранный объект (Blueprint), формирует структуру и граф */
+    /** Processes the selected object (Blueprint), generates the structure and graph */
     void ProcessActor(UObject* SelectedObject, FBPR_ExtractedData& OutData);
 
 private:
-    // -------------------------------
-    // Логирование
+    // ------------------------------- 
+    // Logging 
     // -------------------------------
     void LogMessage(const FString& Msg);
     void LogWarning(const FString& Msg);
     void LogError(const FString& Msg);
 
     // -------------------------------
-    // Работа со структурой Blueprint
+    // Working with the Blueprint structure
     // -------------------------------
-    /** Общая информация о классе (имя, родитель, placeable) */
+    /** General information about the class (name, parent, placeable) */
     void AppendClassInfo(UBlueprint* Blueprint, FString& OutText);
     
-    /** Общая информация о Blueprint */
+    /** General information about Blueprint */
     void AppendBlueprintInfo(UBlueprint* Blueprint, FString& OutText);
     
-    /** Информация о реплицируемых переменных */
+    /** Information about replicated variables */
     void AppendReplicationInfo(UClass* Class, FString& OutText);
 
     // -------------------------------
-    // Переменные
+    // Variables
     // -------------------------------
-    /** Сбор пользовательских переменных в табличном формате */
+    /** Collection of user variables in table format */
     void AppendVariables(UBlueprint* Blueprint, FString& OutText);
     
-    /** Возвращает дефолтное значение свойства */
+    /** Returns the default value of the property */
     FString GetPropertyDefaultValue(FProperty* Property, UObject* Object);
     
-    /** Возвращает детализированный тип свойства */
+    /** Returns the detailed type of the property */
     FString GetPropertyTypeDetailed(FProperty* Property);
     
-    /** Обрабатывает поля структурных свойств и выводит их информацию */
+    /** Processes structural property fields and outputs their information */
     void AppendStructFields(FStructProperty* StructProp, FString& OutText, int32 Indent = 0);
     
-    /** Определяет, является ли свойство пользовательской переменной */
+    /** Determines whether the property is a user variable */
     bool IsUserVariable(FProperty* Property);
 
     // -------------------------------
-    // Компоненты и теги
+    // Components and Tags
     // -------------------------------
-    /** Сбор информации о компонентах актора */
+    /** Collecting information about actor components */
     void AppendActorComponents(UBlueprint* Blueprint, FString& OutText);
     
-    /** Сбор тегов актора */
+    /** Collect actor tags */
     void AppendActorTags(UBlueprint* Blueprint, FString& OutText);
     
-    /** Форматирует информацию о компоненте */
+    /** Formats information about the component */
     FString FormatComponentInfo(UActorComponent* Component);
 
     // -------------------------------
-    // Работа с графами
+    // Working with Graphs
     // -------------------------------
-    /** Основная точка обхода всех графов Blueprint */
+    /** Main point for traversing all Blueprint graphs */
     void AppendGraphs(UBlueprint* Blueprint, FString& OutText);
     
-    /** Обход последовательности узлов графа (exec + data flow) */
+    /** Traverse a sequence of graph nodes (exec + data flow) */
     void AppendGraphSequence(UEdGraph* Graph, FString& OutExecText, FString& OutDataText);
     
-    /** Рекурсивная обработка узлов графа */
+    /** Recursive processing of graph nodes */
     void ProcessNodeSequence(
         UEdGraphNode* Node, 
         int32 IndentLevel, 
@@ -96,30 +101,36 @@ private:
         FString& OutExecText, 
         FString& OutDataText);
 
-    /** Сбор подписи функции по входным/выходным пинам */
+    /** Finds the function entry node in the given graph */
+    UK2Node_FunctionEntry* FindFunctionEntryNodeInGraph(UEdGraph* Graph);
+    
+    /** Finds the function result node in the given graph */
+    UK2Node_FunctionResult* FindFunctionResultNodeInGraph(UEdGraph* Graph);
+    
+    /** Collect function signature by input/output pins */
     FString GetFunctionSignature(UEdGraph* Graph);
     
-    /** Сбор подписи макроса по Tunnel-узлам */
+    /** Collecting macro signatures from Tunnel nodes */
     FString GetMacroSignature(UEdGraph* Graph);
 
     // -------------------------------
-    // Вспомогательные методы для узлов и пинов
+    // Helper methods for nodes and pins
     // -------------------------------
-    /** Формирует читаемое имя узла */
+    /** Generates a human-readable node name */
     FString GetReadableNodeName(UEdGraphNode* Node);
     
-    /** Детали пина (значение или ссылка) */
+    /** Pin details (value or link) */
     FString GetPinDetails(UEdGraphPin* Pin);
     
-    /** Читабельное имя пина */
+    /** Human-readable name of the pin */
     FString GetPinDisplayName(UEdGraphPin* Pin);
     
-    /** Очищает имя от хвоста GUID */
+    /** Strips the name of the GUID tail */
     FString CleanName(const FString& RawName);
     
-    /** Проверяет, является ли нода вычислительной (data-flow) */
+    /** Checks if the node is a compute (data-flow) node */
     bool IsComputationalNode(UEdGraphNode* Node);
     
-    /** Проверяет, есть ли у ноды Exec-вход */
+    /** Checks if the node has an Exec input */
     bool HasExecInput(UEdGraphNode* Node);
 };

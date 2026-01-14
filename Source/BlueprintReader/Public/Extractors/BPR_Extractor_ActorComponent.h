@@ -5,100 +5,109 @@
 #include "CoreMinimal.h"
 #include "Core/BPR_Core.h"
 
+
 class UActorComponent;
 class UBlueprint;
 class UEdGraph;
 class UEdGraphNode;
 class UEdGraphPin;
+class UK2Node_FunctionEntry;
+class UK2Node_FunctionResult;
 
 /**
- * Экстрактор для ActorComponent Blueprint.
- * Собирает переменные, функции и макросы компонента.
- * Результат возвращается в Core через FText.
- */
+* Extractor for the ActorComponent Blueprint.
+* Collects the component's variables, functions, and macros.
+* The result is returned to Core via FText.
+*/
 class BLUEPRINTREADER_API BPR_Extractor_ActorComponent
 {
 public:
 	
 	BPR_Extractor_ActorComponent();
 	~BPR_Extractor_ActorComponent();
+	// --------------------------------
+	// Main entry point
 	// -------------------------------
-	// Главная точка входа
-	// -------------------------------
-	/** Обрабатывает выбранный объект (Blueprint), формирует структуру и граф */
+	/** Processes the selected object (Blueprint), generates the structure and graph */
 	void ProcessComponent(UObject* SelectedObject, FBPR_ExtractedData& OutData);
 
 private:
 
 	// -------------------------------
-	// Логирование
+	// Logging
 	// -------------------------------
-	// Простые методы для вывода сообщений разного уровня
+	// Simple methods for outputting messages of different levels
 	void LogMessage(const FString& Msg);
 	void LogWarning(const FString& Msg);
 	void LogError(const FString& Msg);
 
 	// -------------------------------
-	// Работа со структурой Blueprint
+	// Working with the Blueprint structure
 	// -------------------------------
-	/** Общая информация о Blueprint (родительский класс, репликация) */
+	/** General information about Blueprint (parent class, replication) */
 	void AppendBlueprintInfo(UBlueprint* Blueprint, FString& OutText);
 
-	/** Сбор пользовательских переменных, включая тип, дефолтное значение, флаги, категорию, описание */
+	/** Collection of user variables, including type, default value, flags, category, description */
 	void AppendVariables(UBlueprint* Blueprint, FString& OutText);
+	
+	/** Finds the function entry node in the given graph */
+	UK2Node_FunctionEntry* FindFunctionEntryNodeInGraph(UEdGraph* Graph);
+	
+	/** Finds the function result node in the given graph */
+	UK2Node_FunctionResult* FindFunctionResultNodeInGraph(UEdGraph* Graph);
 
-	/** Возвращает дефолтное значение свойства */
+	/** Returns the default value of the property */
 	FString GetPropertyDefaultValue(FProperty* Property, UObject* Object);
 
-	/** Возвращает детализированный тип свойства, включая TMap/TSet/TArray и enum */
+	/** Returns the detailed type of the property, including TMap/TSet/TArray and enum */
 	FString GetPropertyTypeDetailed(FProperty* Property);
 
-	/** Обрабатывает поля структурных свойств и выводит их информацию */
+	/** Processes structural property fields and outputs their information */
 	void AppendStructFields(FStructProperty* StructProp, FString& OutText, int32 Indent = 0);
 
-	/** Информация о реплицируемых переменных */
+	/** Information about replicated variables */
 	void AppendReplicationInfo(UClass* Class, FString& OutText);
 
 	// -------------------------------
-	// Работа с графами (Event/Function/Macro)
+	// Working with Graphs (Event/Function/Macro)
 	// -------------------------------
-	/** Основная точка обхода всех графов Blueprint */
+	/** Main point for traversing all Blueprint graphs */
 	void AppendGraphs(UBlueprint* Blueprint, FString& OutText);
 
-	/** Обход последовательности узлов графа (exec + data flow) */
+	/** Traverse a sequence of graph nodes (exec + data flow) */
 	void AppendGraphSequence(UEdGraph* Graph, FString& OutExecText, FString& OutDataText);
 
-	/** Рекурсивная обработка узлов графа для exec- и data-flow */
+	/** Recursive processing of graph nodes for exec- and data-flow */
 	void ProcessNodeSequence(UEdGraphNode* Node, int32 IndentLevel, TSet<UEdGraphNode*>& Visited, FString& OutExecText, FString& OutDataText);
 
-	/** Сбор подписи функции по входным/выходным пинам */
+	/** Collect function signature by input/output pins */
 	FString GetFunctionSignature(UEdGraph* Graph);
 
-	/** Сбор подписи макроса по Tunnel-узлам */
+	/** Collecting macro signatures from Tunnel nodes */
 	FString GetMacroSignature(UEdGraph* Graph);
 
-	/** Формирует читаемое имя узла, учитывая тип узла и параметры */
+	/** Generates a human-readable node name given the node type and parameters */
 	FString GetReadableNodeName(UEdGraphNode* Node);
 
-	/** Детали пина (значение по умолчанию или ссылка на другой узел) */
+	/** Pin details (default value or reference to another node) */
 	FString GetPinDetails(UEdGraphPin* Pin);
 
-	/** Читабельное имя пина для вывода */
+	/** Human-readable name of the pin to display */
 	FString GetPinDisplayName(UEdGraphPin* Pin);
 
 	// -------------------------------
-	// Вспомогательные методы
+	// Helper Methods
 	// -------------------------------
-	/** Очищает имя от хвоста GUID, если он есть */
+	/** Strips the name of the trailing GUID, if any */
 	FString CleanName(const FString& RawName);
 
-	/** Определяет, является ли свойство пользовательской переменной (не системной) */
+	/** Determines whether the property is a user variable (not a system variable) */
 	bool IsUserVariable(FProperty* Property);
 	
-	/** Проверяет, является ли нода вычислительной (data-flow), без exec */
+	/** Checks if the node is a compute (data-flow) node, without exec */
 	bool IsComputationalNode(UEdGraphNode* Node);
 
-	/** Проверяет, есть ли у ноды Exec-вход */
+	/** Checks if the node has an Exec input */
 	bool HasExecInput(UEdGraphNode* Node);
 
 };

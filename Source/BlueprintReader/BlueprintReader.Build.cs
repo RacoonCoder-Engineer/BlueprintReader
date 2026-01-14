@@ -1,12 +1,13 @@
 // Copyright (c) 2026 Racoon Coder. All rights reserved.
 
 using UnrealBuildTool;
-
 public class BlueprintReader : ModuleRules
 {
 	public BlueprintReader(ReadOnlyTargetRules Target) : base(Target)
 	{
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
+		bUseUnity = false;
+
 
 		// Public is always only Core
 		PublicDependencyModuleNames.AddRange(

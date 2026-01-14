@@ -12,12 +12,12 @@ class UMaterialExpressionFunctionInput;
 class UMaterialExpressionFunctionOutput;
 
 /**
- * Экстрактор для Material Function и Material Function Instance.
- * Преобразует Function Graph в текстовое представление:
- *  - сигнатуру функции (Inputs / Outputs)
- *  - параметры и дефолтные значения
- *  - граф вычислений (Expression DAG)
- */
+* Extractor for Material Function and Material Function Instance.
+* Converts a Function Graph into a text representation:
+* - function signature (Inputs / Outputs)
+* - parameters and default values
+* - computation graph (Expression DAG)
+*/
 class BLUEPRINTREADER_API BPR_Extractor_MaterialFunction
 {
 public:
@@ -26,45 +26,45 @@ public:
     ~BPR_Extractor_MaterialFunction();
 
     // -------------------------------
-    // Главная точка входа
+    // Main entry point
     // -------------------------------
-    /** Обрабатывает выбранный объект (MaterialFunction или MaterialFunctionInstance) */
+    /** Processes the selected object (MaterialFunction or MaterialFunctionInstance) */
     void ProcessMaterialFunction(UObject* SelectedObject, FBPR_ExtractedData& OutData);
 
 private:
 
-    // -------------------------------
-    // Логирование
+    // ------------------------------- 
+    // Logging 
     // -------------------------------
     void LogMessage(const FString& Msg);
     void LogWarning(const FString& Msg);
     void LogError(const FString& Msg);
 
     // -------------------------------
-    // Структура Material Function (декларативная часть)
-    // -------------------------------
-    /** Общая информация о Material Function */
+    // Material Function Structure (Declarative Part)
+    // --------------------------------
+    /** General Information about the Material Function */
     void AppendFunctionInfo(UMaterialFunction* Function, FString& OutText);
 
-    /** Входные параметры функции (Function Inputs) */
+    /** Function Inputs */
     void AppendFunctionInputs(UMaterialFunction* Function, FString& OutText);
 
-    /** Выходы функции (Function Outputs) */
+    /** Function Outputs */
     void AppendFunctionOutputs(UMaterialFunction* Function, FString& OutText);
 
-    /** Информация о Function Instance и родительской функции */
+    /** Information about the Function Instance and the parent function */
     void AppendFunctionInstanceInfo(UMaterialFunctionInstance* Instance, FString& OutText);
 
-    /** Переопределённые значения Function Instance */
+    /** Function Instance Overrides */
     void AppendFunctionInstanceOverrides(UMaterialFunctionInstance* Instance, FString& OutText);
 
     // -------------------------------
-    // Граф Material Function (вычислительная часть)
+    // Material Function Graph (computational part)
     // -------------------------------
-    /** Точка входа обхода графа — все Function Outputs */
+    /** Graph traversal entry point — all Function Outputs */
     void AppendFunctionGraph(UMaterialFunction* Function, FString& OutText);
 
-    /** Обрабатывает конкретный Function Output */
+    /** Handles a specific Function Output */
     void AppendFunctionOutput(
         const FString& OutputName,
         const TArray<UMaterialExpression*>& DirectExpressions,
@@ -74,7 +74,7 @@ private:
         int32& NextId
     );
 
-    /** Рекурсивный обход Expression-графа (data-flow) */
+    /** Recursive traversal of the Expression graph (data-flow) */
     void ProcessExpressionDAG(
         UMaterialExpression* Expression,
         TMap<UMaterialExpression*, int32>& NodeIds,
@@ -85,35 +85,36 @@ private:
     // -------------------------------
     // Expression / Input helpers
     // -------------------------------
-    /** Читабельное имя Expression (тип + ключевые параметры) */
+    /** Expression human-readable name (type + keywords) */
     FString GetReadableExpressionName(UMaterialExpression* Expression);
 
-    /** Детализация входных пинов Expression */
+    /** Expression Input Pin Details */
     FString GetExpressionInputs(UMaterialExpression* Expression, int32 IndentLevel);
 
-    /** Значение входа: связь или дефолт */
+    /** Input value: link or default */
     FString GetInputValueDescription(const struct FExpressionInput& Input);
 
-    /** Проверка: есть ли у Expression входящие связи */
+    /** Check if Expression has any incoming relationships */
     bool HasAnyInputs(UMaterialExpression* Expression);
 
+    /** Returns readable node name with ID for graph output */
     FString GetReadableNodeName(UMaterialExpression* Expr, int32 NodeId);
 
     // -------------------------------
-    // Вспомогательные методы
+    // Helper Methods
     // -------------------------------
-    /** Очистка имён от технических суффиксов */
+    /** Clearing names of technical suffixes */
     FString CleanName(const FString& RawName);
 
-    /** Отступы для визуального отображения графа */
+    /** Indents for visual display of the graph */
     FString MakeIndent(int32 Level);
 
-    /** Проверка: является ли Expression технически прозрачным */
+    /** Check whether the Expression is technically transparent */
     bool IsTransparentExpression(UMaterialExpression* Expr);
 
-    /** Проверка: является ли Expression логическим источником данных */
+    /** Check if Expression is a logical data source */
     bool IsLogicalSourceExpression(UMaterialExpression* Expr);
 
-    /** Возвращает первый НЕ-прозрачный expression вверх по цепочке */
+    /** Returns the first non-transparent expression up the chain */
     UMaterialExpression* ResolveExpression(UMaterialExpression* Expr);
 };
