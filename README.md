@@ -51,9 +51,10 @@ Copy text (Ctrl+A, Ctrl+C) and paste to AI assistant
 
 ## Roadmap
 
-- [ ] Widget Blueprint support
 - [ ] Export to file (.md, .txt)
 - [ ] Partly output from Graph
+- [ ] Widget Blueprint support
+
 
 ## Support the Project
 
