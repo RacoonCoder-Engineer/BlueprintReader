@@ -1,6 +1,9 @@
 // Copyright (c) 2026 Racoon Coder. All rights reserved.
 
 #include "Core/BPR_Core.h"
+
+#include "Components/Widget.h"
+#include "Components/WidgetComponent.h"
 #include "Engine/Blueprint.h"
 #include "Extractors/BPR_Extractor_Actor.h"
 #include "Extractors/BPR_Extractor_ActorComponent.h"
@@ -33,6 +36,13 @@ bool BPR_Core::IsSupportedAsset(UObject* Object)
                 CachedType = EAssetType::Actor;
                 return true;
             }
+            
+            else if (BP->GeneratedClass->IsChildOf(UUserWidget::StaticClass()))  // New String
+            {
+                CachedType = EAssetType::Widget;
+                return true;
+            }
+            
             else if (BP->GeneratedClass->IsChildOf(UActorComponent::StaticClass()))
             {
                 CachedType = EAssetType::ActorComponent;
@@ -81,6 +91,13 @@ void BPR_Core::ExtractorSelector(UObject* Object)
         {
             UE_LOG(LogTemp, Log, TEXT("BPR_Core: Using Actor extractor"));
             BPR_Extractor_Actor Extractor;
+            Extractor.ProcessActor(Object, TextData);
+            break;
+        }
+    case EAssetType::Widget:
+        {
+            UE_LOG(LogTemp, Log, TEXT("BPR_Core: Using Widget extractor (пока Actor, позже заменим)"));
+            BPR_Extractor_Actor Extractor;          // PlaceHolder!!!
             Extractor.ProcessActor(Object, TextData);
             break;
         }

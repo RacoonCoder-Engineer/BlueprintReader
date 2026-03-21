@@ -34,6 +34,7 @@ public:
     {
         Unknown,
         Actor,
+        Widget,
         Material,
         MaterialFunction,
         ActorComponent,
