@@ -21,10 +21,13 @@ public class BlueprintReader : ModuleRules
 		PrivateDependencyModuleNames.AddRange(
 			new string[]
 			{
+				"Core",
 				"CoreUObject",
 				"Engine",
+				"UnrealEd",
 				"Slate",
-				"SlateCore"
+				"SlateCore",
+				"UMG"
 			}
 		);
 

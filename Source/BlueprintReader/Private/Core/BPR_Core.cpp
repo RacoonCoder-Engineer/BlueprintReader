@@ -3,6 +3,8 @@
 #include "Core/BPR_Core.h"
 
 #include "Components/Widget.h"
+#include "Blueprint/UserWidget.h"
+#include "Blueprint/UserWidgetBlueprint.h"
 #include "Components/WidgetComponent.h"
 #include "Engine/Blueprint.h"
 #include "Extractors/BPR_Extractor_Actor.h"
