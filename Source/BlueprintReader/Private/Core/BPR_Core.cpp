@@ -2,10 +2,7 @@
 
 #include "Core/BPR_Core.h"
 
-#include "Components/Widget.h"
 #include "Blueprint/UserWidget.h"
-#include "Blueprint/UserWidgetBlueprint.h"
-#include "Components/WidgetComponent.h"
 #include "Engine/Blueprint.h"
 #include "Extractors/BPR_Extractor_Actor.h"
 #include "Extractors/BPR_Extractor_ActorComponent.h"
@@ -124,7 +121,7 @@ void BPR_Core::ExtractorSelector(UObject* Object)
         {
             UE_LOG(LogTemp, Log, TEXT("BPR_Core: Using InterfaceBP extractor"));
             BPR_Extractor_InterfaceBP Extractor;
-            Extractor.ProcessInterfaceBP(Object, TextData);
+            Extractor.ProcessInterfaceBP(Object, TextData);      
             break;
         }
        
@@ -143,11 +140,13 @@ void BPR_Core::ExtractorSelector(UObject* Object)
             Extractor.ProcessMaterialFunction(Object, TextData);
             break;
         }
-
+    
     default:
         UE_LOG(LogTemp, Warning, TEXT("BPR_Core: No extractor for CachedType %d"), static_cast<int32>(CachedType));
         break;
     }
+    
+    TextData.AssetType = CachedType;
 }
 
 

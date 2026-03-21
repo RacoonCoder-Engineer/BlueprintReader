@@ -8,10 +8,32 @@
 #include "Materials/Material.h"
 #include "Components/ActorComponent.h"
 
+//---------------------------------------------------------------------- 
+//  Types of Assets Supported
+//---------------------------------------------------------------------- 
+enum class EAssetType : uint8
+{
+    Unknown,
+    Actor,
+    Widget,
+    Material,
+    MaterialFunction,
+    ActorComponent,
+    Enum,
+    Structure,
+    InterfaceBP
+};
+
+//---------------------------------------------------------------------- 
+//  Structure for Data Output
+//---------------------------------------------------------------------- 
+    
 struct FBPR_ExtractedData
 {
     FText Structure = FText::FromString(TEXT("No Data found"));
     FText Graph     = FText::FromString(TEXT("No Data found"));
+    FText Design   = FText::FromString(TEXT("No Data found"));
+    EAssetType AssetType = EAssetType::Unknown;
 };
 
 class SBPR_TextWidget;
@@ -28,22 +50,6 @@ public:
     ~BPR_Core() = default;
 
     //---------------------------------------------------------------------- 
-    //  Types of Assets Supported
-    //---------------------------------------------------------------------- 
-    enum class EAssetType : uint8
-    {
-        Unknown,
-        Actor,
-        Widget,
-        Material,
-        MaterialFunction,
-        ActorComponent,
-        Enum,
-        Structure,
-        InterfaceBP
-    };
-
-    //---------------------------------------------------------------------- 
     //  General logic
     //---------------------------------------------------------------------- 
     bool IsSupportedAsset(UObject* Object);
@@ -58,11 +64,6 @@ private:
     //---------------------------------------------------------------------- 
     //  State Core
     //---------------------------------------------------------------------- 
-    EAssetType CachedType = EAssetType::Unknown;
-
-    TWeakPtr<SBPR_TextWidget> OutputWindow;
-    TWeakPtr<SBPR_TextWidget> StructureTab;
-    TWeakPtr<SBPR_TextWidget> GraphTab;
-
+    EAssetType CachedType = EAssetType::Unknown;    
     FBPR_ExtractedData TextData;
 };
