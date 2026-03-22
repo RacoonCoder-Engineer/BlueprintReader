@@ -24,7 +24,7 @@ void SBPR_TabSwitcher::Construct(const FArguments& InArgs)
     [
         SNew(SVerticalBox)
 
-        // Tab Button Bar (будет динамически заполняться в Rebuild)
+        // Tab Button Bar (will be dynamically populated on Rebuild)
         + SVerticalBox::Slot()
         .AutoHeight()
         .Padding(5)
@@ -62,13 +62,13 @@ void SBPR_TabSwitcher::RebuildTabBarAndContent()
 
     TabBarBox->ClearChildren();
 
-    // Полностью пересоздаём TabSwitcher, чтобы очистить старые слоты
+    // Completely recreate TabSwitcher to clear old slots
     TabSwitcher.Reset();  // старый уничтожается
 
     bool bIsWidget = (CurrentAssetType == EAssetType::Widget);
     int32 TabIndex = 0;
 
-    // Создаём новый switcher
+    // Create a new switcher
     SAssignNew(TabSwitcher, SWidgetSwitcher);
 
     // Design (только для виджетов)
@@ -122,10 +122,10 @@ void SBPR_TabSwitcher::RebuildTabBarAndContent()
 
     UE_LOG(LogTemp, Log, TEXT("BPR_TabSwitcher: Rebuilt %d tabs (Widget mode: %d)"), TabIndex + 1, bIsWidget);
 
-    // Важно! Обновляем слот в ChildSlot, чтобы новый TabSwitcher отобразился
-    // Но поскольку ChildSlot уже содержит SVerticalBox, нужно перестроить весь ChildSlot
-    // Поэтому лучше сделать так:
-    // Пересоздаём весь контент в ChildSlot
+    // Important! Update the ChildSlot slot so the new TabSwitcher displays.
+    // But since ChildSlot already contains an SVerticalBox, we need to rebuild the entire ChildSlot.
+    // Therefore, it's better to do this:
+    // Recreate all content in ChildSlot.
     ChildSlot
     [
         SNew(SVerticalBox)
@@ -149,14 +149,14 @@ void SBPR_TabSwitcher::SetData(const FBPR_ExtractedData& InData)
 {
     PendingData = InData;
 
-    // Обновляем тип и перестраиваем табы сразу
+    // Update the type and rebuild the tabs at once
     if (InData.AssetType != CurrentAssetType)
     {
         CurrentAssetType = InData.AssetType;
         RebuildTabBarAndContent();
     }
 
-    // Теперь проверяем, готовы ли все нужные виджеты
+    // Now we check if all the required widgets are ready
     bool WidgetsReady = StructureTextWidget.IsValid() && GraphTextWidget.IsValid();
     bool DesignReadyOrNotNeeded = (CurrentAssetType != EAssetType::Widget) || DesignTextWidget.IsValid();
 
@@ -189,13 +189,13 @@ void SBPR_TabSwitcher::ApplyPendingData()
 
     if (DesignTextWidget.IsValid())
     {
-        // Заглушка для Design
+        // Placeholder for Design
         FText DesignText = FText::FromString(
             "### Design (Widget Hierarchy)\n\n"
-            "Иерархия виджетов (CanvasPanel → VerticalBox → Button/Text/Image и т.д.),\n"
-            "anchors, offsets, padding, alignment, visibility, анимации, bindings\n"
-            "появятся здесь после реализации экстрактора для UWidgetBlueprint.\n\n"
-            "Сейчас используется Actor-экстрактор как временная заглушка."
+            "Widget hierarchy (CanvasPanel → VerticalBox → Button/Text/Image, etc.),\n"
+            "anchors, offsets, padding, alignment, visibility, animations, bindings\n"
+            "will appear here after the UWidgetBlueprint extractor is implemented.\n\n"
+            "The Actor extractor is currently used as a temporary stub."
         );
         DesignTextWidget->SetText(DesignText);
     }

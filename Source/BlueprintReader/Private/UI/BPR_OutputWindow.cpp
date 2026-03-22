@@ -21,7 +21,7 @@ BPR_OutputWindow::~BPR_OutputWindow()
 
 void BPR_OutputWindow::Open(const TOptional<FBPR_ExtractedData>& InitialData)
 {
-	// Если окно уже открыто — поднимаем его на передний план
+	// If the window is already open, bring it to the foreground.
 	if (Window.IsValid())
 	{
 		Window.Pin()->BringToFront();
