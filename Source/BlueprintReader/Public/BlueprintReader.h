@@ -37,7 +37,7 @@ public:
 
 private:
 	/** Central plugin logic */
-	TUniquePtr<BPR_Core> CoreInstance;
+	TSharedPtr<BPR_Core> CoreInstance;
 
 
 	/** Output window with TabSwitcher */

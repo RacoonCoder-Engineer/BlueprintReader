@@ -6,25 +6,30 @@
 #include "ToolMenus.h"
 #include "AssetRegistry/AssetData.h"
 
-//==============================================================================
-//  BPR_ContentBrowserAssetActions
-//
-//  It only catches the click and transfers the asset to the module.
-//==============================================================================
+#include "Core/BPR_Core.h"
+#include "UI/BPR_OutputWindow.h"
+#include "UI/BPR_InfoWindow.h"
 
 class FBPR_ContentBrowserAssetActions
 {
 public:
-    /** Registers the "Show BP as MD" item in the Content Browser context menu */
     void Register();
-
-    /** Removes menu items belonging to this class */
     void Unregister();
 
-private:
-    /** Click handler for the item "Show BP as MD" */
+    /** Инициализация зависимостей из модуля (вызвать один раз при старте) */
+    void SetCore(TSharedPtr<BPR_Core> InCore);
+    void SetOutputWindow(TSharedPtr<BPR_OutputWindow> InOutputWindow);
+
+    /** Click handler */
     void OnShowBPAsMDClicked();
 
-    /** Gets the first selected asset */
+private:
     UObject* GetSelectedAsset() const;
+    
+    /** Основная логика обработки выбранного ассета */
+    void ExecuteForObject(UObject* SelectedObject);
+
+private:
+    TWeakPtr<BPR_Core> CoreInstance;
+    TWeakPtr<BPR_OutputWindow> OutputWindow;
 };

@@ -149,4 +149,16 @@ void BPR_Core::ExtractorSelector(UObject* Object)
     TextData.AssetType = CachedType;
 }
 
+FUnsupportedAssetInfo BPR_Core::GetUnsupportedAssetInfo() const
+{
+    return {
+        FText::FromString("Blueprint Reader"),
+        FText::FromString("Warning! This asset is not supported yet!"),
+        FText::FromString(
+            "The Blueprint Reader plugin cannot display this asset type in the current version.\n"
+            "This is not an engine error, it's just support not yet implemented."),
+        TEXT("https://github.com/RacoonCoder-Engineer/BlueprintReader"),
+        FText::FromString("Check for updates")
+    };
+}
 

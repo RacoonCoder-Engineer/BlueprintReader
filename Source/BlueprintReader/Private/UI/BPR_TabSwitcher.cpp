@@ -5,26 +5,14 @@
 #include "Widgets/Layout/SWidgetSwitcher.h"
 #include "Widgets/Input/SButton.h"
 #include "Widgets/SBoxPanel.h"
+#include "Widgets/Text/STextBlock.h"
 
 void SBPR_TabSwitcher::Construct(const FArguments& InArgs)
 {
-    UE_LOG(LogTemp, Log, TEXT("BPR_TabSwitcher: Construct starting"));
-
-    if (InArgs._InitialData.IsSet())
-    {
-        PendingData = InArgs._InitialData.GetValue();
-        UE_LOG(LogTemp, Log, TEXT("BPR_TabSwitcher: Initial data provided"));
-        if (PendingData.IsSet())
-        {
-            CurrentAssetType = PendingData->AssetType;
-        }
-    }
-
     ChildSlot
     [
         SNew(SVerticalBox)
 
-        // Tab Button Bar (will be dynamically populated on Rebuild)
         + SVerticalBox::Slot()
         .AutoHeight()
         .Padding(5)
@@ -32,7 +20,6 @@ void SBPR_TabSwitcher::Construct(const FArguments& InArgs)
             SAssignNew(TabBarBox, SHorizontalBox)
         ]
 
-        // Tabs Content
         + SVerticalBox::Slot()
         .FillHeight(1.f)
         [
@@ -40,41 +27,53 @@ void SBPR_TabSwitcher::Construct(const FArguments& InArgs)
         ]
     ];
 
-    RebuildTabBarAndContent();
-
-    SwitchToIndex(0);
-
-    UE_LOG(LogTemp, Log, TEXT("BPR_TabSwitcher: Construct finished"));
-
-    if (PendingData.IsSet())
+    if (InArgs._InitialData.IsSet())
     {
-        ApplyPendingData();
+        SetData(InArgs._InitialData.GetValue());
+    }
+    else
+    {
+        // Дефолт — пустой или ошибка
+        CurrentAssetType = EAssetType::Unknown;
+        RebuildTabsFromData();
+        SwitchToTab(0);
     }
 }
 
-void SBPR_TabSwitcher::RebuildTabBarAndContent()
+void SBPR_TabSwitcher::SetData(const FBPR_ExtractedData& InData)
 {
-    if (!TabBarBox.IsValid())
-    {
-        UE_LOG(LogTemp, Warning, TEXT("TabBarBox invalid"));
-        return;
-    }
+    CurrentData = InData;
+    CurrentAssetType = InData.AssetType;
 
-    TabBarBox->ClearChildren();
+    RebuildTabsFromData();
+    SwitchToTab(0);  // или сохраняй предыдущий индекс, если нужно
+}
 
-    // Полностью пересоздаём TabSwitcher
-    TabSwitcher.Reset();  // уничтожаем старый
+void SBPR_TabSwitcher::RebuildTabsFromData()
+{
+    ClearTabs();
 
-    SAssignNew(TabSwitcher, SWidgetSwitcher);
-
-    int32 Index = 0;
+    int32 TabIndex = 0;
 
     switch (CurrentAssetType)
     {
-    case EAssetType::Enum:
-    case EAssetType::Structure:
-        AddTabButton("Structure", Index);
-        TabSwitcher->AddSlot()[SAssignNew(StructureTextWidget, SBPR_TextWidget)];
+    case EAssetType::Widget:
+        AddTab(
+            FText::FromString("Design"),
+            CreateDesignTabContent()
+        );
+        TabIndex++;
+
+        AddTab(
+            FText::FromString("Structure"),
+            CreateStructureTabContent(CurrentData.Structure)
+        );
+        TabIndex++;
+
+        AddTab(
+            FText::FromString("Graph"),
+            CreateGraphTabContent(CurrentData.Graph)
+        );
         break;
 
     case EAssetType::Actor:
@@ -82,137 +81,145 @@ void SBPR_TabSwitcher::RebuildTabBarAndContent()
     case EAssetType::Material:
     case EAssetType::MaterialFunction:
     case EAssetType::InterfaceBP:
-        AddTabButton("Structure", Index++);
-        TabSwitcher->AddSlot()[SAssignNew(StructureTextWidget, SBPR_TextWidget)];
+        AddTab(
+            FText::FromString("Structure"),
+            CreateStructureTabContent(CurrentData.Structure)
+        );
+        TabIndex++;
 
-        AddTabButton("Graph", Index);
-        TabSwitcher->AddSlot()[SAssignNew(GraphTextWidget, SBPR_TextWidget)];
+        AddTab(
+            FText::FromString("Graph"),
+            CreateGraphTabContent(CurrentData.Graph)
+        );
         break;
 
-    case EAssetType::Widget:
-        AddTabButton("Design", Index++);
-        TabSwitcher->AddSlot()[SAssignNew(DesignTextWidget, SBPR_TextWidget)];
-
-        AddTabButton("Structure", Index++);
-        TabSwitcher->AddSlot()[SAssignNew(StructureTextWidget, SBPR_TextWidget)];
-
-        AddTabButton("Graph", Index);
-        TabSwitcher->AddSlot()[SAssignNew(GraphTextWidget, SBPR_TextWidget)];
+    case EAssetType::Enum:
+    case EAssetType::Structure:
+        AddTab(
+            FText::FromString("Structure"),
+            CreateStructureTabContent(CurrentData.Structure)
+        );
         break;
 
-    default:  // Unknown
-        AddTabButton("Info", Index);
-        TabSwitcher->AddSlot()[SAssignNew(ErrorTextWidget, SBPR_TextWidget)];
-
-        if (ErrorTextWidget.IsValid())
-        {
-            ErrorTextWidget->SetText(FText::FromString(
-                "### Blueprint ещё не добавлен на поддержку\n\n"
-                "Тип: " + FString::FromInt(static_cast<int32>(CurrentAssetType)) + "\n\n"
-                "Добавь case в RebuildTabBarAndContent()"
-            ));
-        }
+    default:  // Unknown или неподдержанный
+        AddTab(
+            FText::FromString("Info"),
+            CreateErrorTabContent()
+        );
         break;
     }
 
-    // Перестраиваем весь ChildSlot с новым TabSwitcher
-    ChildSlot
-    [
-        SNew(SVerticalBox)
-        + SVerticalBox::Slot()
-        .AutoHeight()
-        .Padding(5)
-        [
-            TabBarBox.ToSharedRef()
-        ]
-        + SVerticalBox::Slot()
-        .FillHeight(1.f)
-        [
-            TabSwitcher.ToSharedRef()
-        ]
-    ];
-
-    UE_LOG(LogTemp, Log, TEXT("Rebuilt tabs for type %d"), static_cast<int32>(CurrentAssetType));
-
-    // После перестройки можно сразу применить данные
-    if (PendingData.IsSet())
-    {
-        ApplyPendingData();
-    }
+    UE_LOG(LogTemp, Log, TEXT("BPR_TabSwitcher: Rebuilt %d tabs for type %d"), TabIndex + 1, (int32)CurrentAssetType);
 }
 
-void SBPR_TabSwitcher::SetData(const FBPR_ExtractedData& InData)
+void SBPR_TabSwitcher::ClearTabs()
 {
-    PendingData = InData;
-
-    if (InData.AssetType != CurrentAssetType)
+    if (TabBarBox.IsValid())
     {
-        CurrentAssetType = InData.AssetType;
-        RebuildTabBarAndContent();
+        TabBarBox->ClearChildren();
     }
 
-    // Применяем данные сразу, если всё готово
-    if (StructureTextWidget.IsValid() && GraphTextWidget.IsValid() &&
-        (CurrentAssetType != EAssetType::Widget || DesignTextWidget.IsValid()) &&
-        (CurrentAssetType != EAssetType::Unknown || ErrorTextWidget.IsValid()))
-    {
-        ApplyPendingData();
-    }
-}
-
-void SBPR_TabSwitcher::ApplyPendingData()
-{
-    if (!PendingData.IsSet()) return;
-
-    if (CurrentAssetType == EAssetType::Unknown && ErrorTextWidget.IsValid())
-    {
-        PendingData.Reset();
-        return;
-    }
-
-    if (StructureTextWidget.IsValid())
-        StructureTextWidget->SetText(PendingData->Structure);
-
-    if (GraphTextWidget.IsValid())
-        GraphTextWidget->SetText(PendingData->Graph);
-
-    if (DesignTextWidget.IsValid())
-    {
-        DesignTextWidget->SetText(FText::FromString(
-            "### Design (Widget Hierarchy)\n\n"
-            "Иерархия виджетов появится здесь после реализации Widget-экстрактора..."
-        ));
-    }
-
-    PendingData.Reset();
-}
-
-FReply SBPR_TabSwitcher::OnTabClicked(int32 Index)
-{
-    SwitchToIndex(Index);
-    return FReply::Handled();
-}
-
-void SBPR_TabSwitcher::SwitchToIndex(int32 Index)
-{
     if (TabSwitcher.IsValid())
     {
-        TabSwitcher->SetActiveWidgetIndex(Index);
+        // SWidgetSwitcher не имеет ClearChildren, поэтому пересоздаём
+        TabSwitcher.Reset();
+        ChildSlot
+        [
+            SNew(SVerticalBox)
+            + SVerticalBox::Slot()
+            .AutoHeight()
+            .Padding(5)
+            [
+                TabBarBox.ToSharedRef()
+            ]
+            + SVerticalBox::Slot()
+            .FillHeight(1.f)
+            [
+                SAssignNew(TabSwitcher, SWidgetSwitcher)
+            ]
+        ];
     }
-    else
-    {
-        UE_LOG(LogTemp, Error, TEXT("BPR_TabSwitcher: Cannot switch - TabSwitcher is invalid"));
-    }
+
+    // Сбрасываем кэшированные виджеты
+    DesignTextWidget.Reset();
+    StructureTextWidget.Reset();
+    GraphTextWidget.Reset();
+    ErrorTextWidget.Reset();
 }
 
-void SBPR_TabSwitcher::AddTabButton(const FString& Label, int32 Index)
+void SBPR_TabSwitcher::AddTab(const FText& Label, TSharedRef<SWidget> ContentWidget)
 {
+    if (!TabBarBox.IsValid() || !TabSwitcher.IsValid()) return;
+
+    int32 Index = TabSwitcher->GetNumWidgets();
+
+    // Кнопка
     TabBarBox->AddSlot()
         .AutoWidth()
         .Padding(2)
         [
             SNew(SButton)
-            .Text(FText::FromString(Label))
+            .Text(Label)
             .OnClicked(this, &SBPR_TabSwitcher::OnTabClicked, Index)
         ];
+
+    // Контент
+    TabSwitcher->AddSlot()
+    [
+        ContentWidget
+    ];
+}
+
+TSharedRef<SWidget> SBPR_TabSwitcher::CreateDesignTabContent() const
+{
+    TSharedRef<SBPR_TextWidget> Widget = SNew(SBPR_TextWidget);
+    Widget->SetText(FText::FromString(
+        "### Design (Widget Hierarchy)\n\n"
+        "Иерархия виджетов, layout, anchors, bindings и анимации появятся здесь после реализации экстрактора."
+    ));
+    return Widget;
+}
+
+TSharedRef<SWidget> SBPR_TabSwitcher::CreateStructureTabContent(const FText& Content) const
+{
+    TSharedRef<SBPR_TextWidget> Widget = SNew(SBPR_TextWidget);
+    Widget->SetText(Content.IsEmpty() ? FText::FromString("No Structure Data") : Content);
+    return Widget;
+}
+
+TSharedRef<SWidget> SBPR_TabSwitcher::CreateGraphTabContent(const FText& Content) const
+{
+    TSharedRef<SBPR_TextWidget> Widget = SNew(SBPR_TextWidget);
+    Widget->SetText(Content.IsEmpty() ? FText::FromString("No Graph Data") : Content);
+    return Widget;
+}
+
+TSharedRef<SWidget> SBPR_TabSwitcher::CreateErrorTabContent() const
+{
+    TSharedRef<SBPR_TextWidget> Widget = SNew(SBPR_TextWidget);
+
+    FString ErrorMessage = FString::Printf(
+        TEXT("### Blueprint ещё не поддерживается\n\n")
+        TEXT("Тип ассета: %d\n")
+        TEXT("Добавь case в RebuildTabsFromData() и экстрактор."),
+        static_cast<int32>(CurrentAssetType)
+    );
+
+    Widget->SetText(FText::FromString(ErrorMessage));
+
+    return Widget;
+}
+
+FReply SBPR_TabSwitcher::OnTabClicked(int32 TabIndex)
+{
+    SwitchToTab(TabIndex);
+    return FReply::Handled();
+}
+
+void SBPR_TabSwitcher::SwitchToTab(int32 Index)
+{
+    if (TabSwitcher.IsValid() && Index >= 0 && Index < TabSwitcher->GetNumWidgets())
+    {
+        TabSwitcher->SetActiveWidgetIndex(Index);
+    }
 }

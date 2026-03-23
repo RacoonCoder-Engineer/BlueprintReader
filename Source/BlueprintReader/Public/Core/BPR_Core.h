@@ -24,6 +24,19 @@ enum class EAssetType : uint8
     InterfaceBP
 };
 
+
+//---------------------------------------------------------------------- 
+//  Data for unsupported Assets
+//---------------------------------------------------------------------- 
+struct FUnsupportedAssetInfo
+{
+    FText Title;
+    FText MainMessage;
+    FText SubMessage;
+    FString GitHubURL;
+    FText ButtonText;
+};
+
 //---------------------------------------------------------------------- 
 //  Structure for Data Output
 //---------------------------------------------------------------------- 
@@ -54,10 +67,18 @@ public:
     //---------------------------------------------------------------------- 
     bool IsSupportedAsset(UObject* Object);
     void ExtractorSelector(UObject* Object);
-  
 
     // --- Data access for UI ---
     const FBPR_ExtractedData& GetTextData() const { return TextData; }
+    
+    //==============================================================================
+    // Logic for unsupported assets
+    // (minimum, only for ActorComponent and Actor in the first step)
+    //==============================================================================   
+    
+    
+
+    FUnsupportedAssetInfo GetUnsupportedAssetInfo() const;
 
 private:
 
