@@ -22,9 +22,7 @@ public:
 	void SetData(const FBPR_ExtractedData& InData);
 
 private:
-	FReply OnTabClicked(int32 TabIndex);
-	FReply OnStructureTabClicked(); //To Remove
-	 FReply OnGraphTabClicked(); //To Remove
+	FReply OnTabClicked(int32 TabIndex);	
 	void SwitchToIndex(int32 Index);
 	void RebuildTabBarAndContent();
 
@@ -35,9 +33,16 @@ private:
 	TSharedPtr<SBPR_TextWidget> StructureTextWidget;
 	TSharedPtr<SBPR_TextWidget> GraphTextWidget;
 	TSharedPtr<SBPR_TextWidget> DesignTextWidget;
+	TSharedPtr<SBPR_TextWidget> ErrorTextWidget;
 	TSharedPtr<SHorizontalBox> TabBarBox;
-
+	
 	/** Data to be applied */
 	TOptional<FBPR_ExtractedData> PendingData;
 	EAssetType CurrentAssetType = EAssetType::Unknown;
+	
+//==========================================================
+// Helper Functions
+//==========================================================	
+void AddTabButton(const FString& Label, int32 Index);
+	
 };

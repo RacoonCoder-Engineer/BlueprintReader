@@ -56,130 +56,119 @@ void SBPR_TabSwitcher::RebuildTabBarAndContent()
 {
     if (!TabBarBox.IsValid())
     {
-        UE_LOG(LogTemp, Warning, TEXT("BPR_TabSwitcher: TabBarBox invalid"));
+        UE_LOG(LogTemp, Warning, TEXT("TabBarBox invalid"));
         return;
     }
 
     TabBarBox->ClearChildren();
 
-    // Completely recreate TabSwitcher to clear old slots
-    TabSwitcher.Reset();  // старый уничтожается
+    // Полностью пересоздаём TabSwitcher
+    TabSwitcher.Reset();  // уничтожаем старый
 
-    bool bIsWidget = (CurrentAssetType == EAssetType::Widget);
-    int32 TabIndex = 0;
-
-    // Create a new switcher
     SAssignNew(TabSwitcher, SWidgetSwitcher);
 
-    // Design (только для виджетов)
-    if (bIsWidget)
+    int32 Index = 0;
+
+    switch (CurrentAssetType)
     {
-        TabBarBox->AddSlot()
-            .AutoWidth().Padding(2)
-            [
-                SNew(SButton)
-                .Text(FText::FromString("Design"))
-                .OnClicked(this, &SBPR_TabSwitcher::OnTabClicked, TabIndex)
-            ];
+    case EAssetType::Enum:
+    case EAssetType::Structure:
+        AddTabButton("Structure", Index);
+        TabSwitcher->AddSlot()[SAssignNew(StructureTextWidget, SBPR_TextWidget)];
+        break;
 
-        TabSwitcher->AddSlot()
-            [
-                SAssignNew(DesignTextWidget, SBPR_TextWidget)
-            ];
+    case EAssetType::Actor:
+    case EAssetType::ActorComponent:
+    case EAssetType::Material:
+    case EAssetType::MaterialFunction:
+    case EAssetType::InterfaceBP:
+        AddTabButton("Structure", Index++);
+        TabSwitcher->AddSlot()[SAssignNew(StructureTextWidget, SBPR_TextWidget)];
 
-        ++TabIndex;
+        AddTabButton("Graph", Index);
+        TabSwitcher->AddSlot()[SAssignNew(GraphTextWidget, SBPR_TextWidget)];
+        break;
+
+    case EAssetType::Widget:
+        AddTabButton("Design", Index++);
+        TabSwitcher->AddSlot()[SAssignNew(DesignTextWidget, SBPR_TextWidget)];
+
+        AddTabButton("Structure", Index++);
+        TabSwitcher->AddSlot()[SAssignNew(StructureTextWidget, SBPR_TextWidget)];
+
+        AddTabButton("Graph", Index);
+        TabSwitcher->AddSlot()[SAssignNew(GraphTextWidget, SBPR_TextWidget)];
+        break;
+
+    default:  // Unknown
+        AddTabButton("Info", Index);
+        TabSwitcher->AddSlot()[SAssignNew(ErrorTextWidget, SBPR_TextWidget)];
+
+        if (ErrorTextWidget.IsValid())
+        {
+            ErrorTextWidget->SetText(FText::FromString(
+                "### Blueprint ещё не добавлен на поддержку\n\n"
+                "Тип: " + FString::FromInt(static_cast<int32>(CurrentAssetType)) + "\n\n"
+                "Добавь case в RebuildTabBarAndContent()"
+            ));
+        }
+        break;
     }
 
-    // Structure
-    TabBarBox->AddSlot()
-        .AutoWidth().Padding(2)
-        [
-            SNew(SButton)
-            .Text(FText::FromString("Structure"))
-            .OnClicked(this, &SBPR_TabSwitcher::OnTabClicked, TabIndex)
-        ];
-
-    TabSwitcher->AddSlot()
-        [
-            SAssignNew(StructureTextWidget, SBPR_TextWidget)
-        ];
-
-    ++TabIndex;
-
-    // Graph
-    TabBarBox->AddSlot()
-        .AutoWidth().Padding(2)
-        [
-            SNew(SButton)
-            .Text(FText::FromString("Graph"))
-            .OnClicked(this, &SBPR_TabSwitcher::OnTabClicked, TabIndex)
-        ];
-
-    TabSwitcher->AddSlot()
-        [
-            SAssignNew(GraphTextWidget, SBPR_TextWidget)
-        ];
-
-    UE_LOG(LogTemp, Log, TEXT("BPR_TabSwitcher: Rebuilt %d tabs (Widget mode: %d)"), TabIndex + 1, bIsWidget);
-
-    // Important! Update the ChildSlot slot so the new TabSwitcher displays.
-    // But since ChildSlot already contains an SVerticalBox, we need to rebuild the entire ChildSlot.
-    // Therefore, it's better to do this:
-    // Recreate all content in ChildSlot.
+    // Перестраиваем весь ChildSlot с новым TabSwitcher
     ChildSlot
     [
         SNew(SVerticalBox)
-
         + SVerticalBox::Slot()
         .AutoHeight()
         .Padding(5)
         [
             TabBarBox.ToSharedRef()
         ]
-
         + SVerticalBox::Slot()
         .FillHeight(1.f)
         [
             TabSwitcher.ToSharedRef()
         ]
     ];
+
+    UE_LOG(LogTemp, Log, TEXT("Rebuilt tabs for type %d"), static_cast<int32>(CurrentAssetType));
+
+    // После перестройки можно сразу применить данные
+    if (PendingData.IsSet())
+    {
+        ApplyPendingData();
+    }
 }
 
 void SBPR_TabSwitcher::SetData(const FBPR_ExtractedData& InData)
 {
     PendingData = InData;
 
-    // Update the type and rebuild the tabs at once
     if (InData.AssetType != CurrentAssetType)
     {
         CurrentAssetType = InData.AssetType;
         RebuildTabBarAndContent();
     }
 
-    // Now we check if all the required widgets are ready
-    bool WidgetsReady = StructureTextWidget.IsValid() && GraphTextWidget.IsValid();
-    bool DesignReadyOrNotNeeded = (CurrentAssetType != EAssetType::Widget) || DesignTextWidget.IsValid();
-
-    if (WidgetsReady && DesignReadyOrNotNeeded)
+    // Применяем данные сразу, если всё готово
+    if (StructureTextWidget.IsValid() && GraphTextWidget.IsValid() &&
+        (CurrentAssetType != EAssetType::Widget || DesignTextWidget.IsValid()) &&
+        (CurrentAssetType != EAssetType::Unknown || ErrorTextWidget.IsValid()))
     {
-        UE_LOG(LogTemp, Log, TEXT("BPR_TabSwitcher: Widgets ready, applying immediately"));
         ApplyPendingData();
-    }
-    else
-    {
-        UE_LOG(LogTemp, Warning, TEXT("BPR_TabSwitcher: Widgets not ready yet, deferring apply"));
     }
 }
 
 void SBPR_TabSwitcher::ApplyPendingData()
 {
-    if (!PendingData.IsSet())
+    if (!PendingData.IsSet()) return;
+
+    if (CurrentAssetType == EAssetType::Unknown && ErrorTextWidget.IsValid())
     {
-        UE_LOG(LogTemp, Warning, TEXT("BPR_TabSwitcher: No pending data to apply"));
+        PendingData.Reset();
         return;
     }
-
-    UE_LOG(LogTemp, Log, TEXT("BPR_TabSwitcher: Applying pending data NOW"));
 
     if (StructureTextWidget.IsValid())
         StructureTextWidget->SetText(PendingData->Structure);
@@ -189,20 +178,13 @@ void SBPR_TabSwitcher::ApplyPendingData()
 
     if (DesignTextWidget.IsValid())
     {
-        // Placeholder for Design
-        FText DesignText = FText::FromString(
+        DesignTextWidget->SetText(FText::FromString(
             "### Design (Widget Hierarchy)\n\n"
-            "Widget hierarchy (CanvasPanel → VerticalBox → Button/Text/Image, etc.),\n"
-            "anchors, offsets, padding, alignment, visibility, animations, bindings\n"
-            "will appear here after the UWidgetBlueprint extractor is implemented.\n\n"
-            "The Actor extractor is currently used as a temporary stub."
-        );
-        DesignTextWidget->SetText(DesignText);
+            "Иерархия виджетов появится здесь после реализации Widget-экстрактора..."
+        ));
     }
 
     PendingData.Reset();
-
-    UE_LOG(LogTemp, Log, TEXT("BPR_TabSwitcher: Data applied successfully"));
 }
 
 FReply SBPR_TabSwitcher::OnTabClicked(int32 Index)
@@ -221,4 +203,16 @@ void SBPR_TabSwitcher::SwitchToIndex(int32 Index)
     {
         UE_LOG(LogTemp, Error, TEXT("BPR_TabSwitcher: Cannot switch - TabSwitcher is invalid"));
     }
+}
+
+void SBPR_TabSwitcher::AddTabButton(const FString& Label, int32 Index)
+{
+    TabBarBox->AddSlot()
+        .AutoWidth()
+        .Padding(2)
+        [
+            SNew(SButton)
+            .Text(FText::FromString(Label))
+            .OnClicked(this, &SBPR_TabSwitcher::OnTabClicked, Index)
+        ];
 }

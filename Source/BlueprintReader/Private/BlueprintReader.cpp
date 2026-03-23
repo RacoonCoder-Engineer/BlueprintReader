@@ -91,7 +91,7 @@ void FBlueprintReaderModule::HandleMenuClick(UObject* SelectedObject)
 			FText::FromString(
 				"The Blueprint Reader plugin cannot display this asset type in the current version.\n"
 				"This is not an engine error, it's just support not yet implemented."), // SubMessage
-			FString("https://github.com/Alassar1987/BlueprintReader"),             // URL
+			FString("https://github.com/RacoonCoder-Engineer/BlueprintReader"),             // URL
 			FText::FromString("Check for updates")                                    // Button text
 		});
 
