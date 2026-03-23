@@ -1,5 +1,44 @@
 // Copyright (c) 2026 Racoon Coder. All rights reserved.
 
+// TODO: Улучшения и доработки экстрактора виджетов
+// =====================================================================
+// 1. Bindings — расширить вывод событий (OnClicked, OnTextChanged и т.д.)
+//    Сейчас выводятся только имена делегатов (OnTextChangedDispatcher),
+//    но не показывается, к какой функции/ивенту они привязаны.
+//    Решение: в графе Event Graph искать K2Node_ComponentBoundEvent,
+//    где ComponentName == Widget->GetName() и DelegatePropertyName == имя делегата.
+//    Добавить вывод: "OnTextChanged → CustomEvent_MyTextChanged"
+//    Приоритет: высокий (самая частая причина "почему не работает")
+
+// 2. Текст в TextBlock'ах / лейблах
+//    Сейчас для WBP_TextLabel_C и подобных выводится только "Custom Widget",
+//    текст не извлекается.
+//    Причина: AppendWidgetProperties обрабатывает только нативные UTextBlock.
+//    Решение: 
+//      - Если WBP_* наследует UUserWidget → получить WidgetTree → найти UTextBlock внутри
+//      - Или добавить поддержку типичных кастомных виджетов через Cast к UUserWidget + GetWidgetFromName
+//    Приоритет: средний (важно для понимания содержимого UI)
+
+// 3. Свойства кастомных виджетов (WBP_*)
+//    Сейчас: "Custom Widget: WBP_EditableUnderlinedField_C"
+//    Решение: 
+//      - Если виджет — UUserWidget, рекурсивно вызвать AppendWidgetProperties на его RootWidget
+//      - Или добавить специальную обработку часто используемых WBP_* (через if (Widget->GetClass()->GetName().StartsWith("WBP_")))
+//    Приоритет: средний
+
+// 4. Анимации
+//    Уже обрабатывается в AppendAnimations — если их нет, выводит "None"
+//    Доработка: добавить длительность, имена треков, события (если нужно)
+//    Приоритет: низкий
+
+// 5. Общие улучшения
+//    - Добавить обработку Visibility Binding (если Visibility привязан к переменной)
+//    - Добавить Render Transform (Scale, Rotation, Translation), если не Identity
+//    - Опционально: выводить ZOrder, IsFocusable, Navigation
+//    Приоритет: низкий-средний
+
+// =====================================================================
+
 #include "Extractors/BPR_Extractor_Widget.h"
 
 // Общие инклюды из Actor-экстрактора
