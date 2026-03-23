@@ -27,7 +27,8 @@ public class BlueprintReader : ModuleRules
 				"UnrealEd",
 				"Slate",
 				"SlateCore",
-				"UMG"
+				"UMG",
+				"UMGEditor"
 			}
 		);
 

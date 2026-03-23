@@ -40,7 +40,7 @@ void BPR_InfoWindow::Open(const FParams& Params)
             [
                 SNew(SVerticalBox)
 
-                // 1️⃣ Main warning text
+                // 1 Main warning text
                 + SVerticalBox::Slot()
                 .AutoHeight()
                 .Padding(0, 10)
@@ -52,7 +52,7 @@ void BPR_InfoWindow::Open(const FParams& Params)
                     .Justification(ETextJustify::Center)
                 ]
 
-                // 2️⃣ Detailed Explanation
+                // 2 Detailed Explanation
                 + SVerticalBox::Slot()
                 .AutoHeight()
                 .Padding(20, 5)
@@ -64,7 +64,7 @@ void BPR_InfoWindow::Open(const FParams& Params)
                     .AutoWrapText(true)
                 ]
 
-                // 3️⃣ "Check for updates" button
+                // 3 "Check for updates" button
                 + SVerticalBox::Slot()
                 .AutoHeight()
                 .HAlign(HAlign_Center)
@@ -83,7 +83,7 @@ void BPR_InfoWindow::Open(const FParams& Params)
                     })
                 ]
 
-                // 4️⃣ Tooltip below the button
+                // 4 Tooltip below the button
                 + SVerticalBox::Slot()
                 .AutoHeight()
                 .HAlign(HAlign_Center)
@@ -96,7 +96,7 @@ void BPR_InfoWindow::Open(const FParams& Params)
                     .Justification(ETextJustify::Center)
                 ]
 
-                // 5️⃣ OK button
+                // 5 OK button
                 + SVerticalBox::Slot()
                 .AutoHeight()
                 .HAlign(HAlign_Right)

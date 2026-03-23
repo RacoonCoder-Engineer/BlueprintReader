@@ -1,6 +1,8 @@
 // Copyright (c) 2026 Racoon Coder. All rights reserved.
 
 #include "UI/BPR_TabSwitcher.h"
+
+#include "InstalledPlatformInfo.h"
 #include "UI/BPR_TextWidget.h"
 #include "Widgets/Layout/SWidgetSwitcher.h"
 #include "Widgets/Input/SButton.h"
@@ -60,7 +62,7 @@ void SBPR_TabSwitcher::RebuildTabsFromData()
     case EAssetType::Widget:
         AddTab(
             FText::FromString("Design"),
-            CreateDesignTabContent()
+            CreateDesignTabContent(CurrentData.Design)
         );
         TabIndex++;
 
@@ -170,13 +172,14 @@ void SBPR_TabSwitcher::AddTab(const FText& Label, TSharedRef<SWidget> ContentWid
     ];
 }
 
-TSharedRef<SWidget> SBPR_TabSwitcher::CreateDesignTabContent() const
+TSharedRef<SWidget> SBPR_TabSwitcher::CreateDesignTabContent(const FText& Content) const
 {
     TSharedRef<SBPR_TextWidget> Widget = SNew(SBPR_TextWidget);
-    Widget->SetText(FText::FromString(
-        "### Design (Widget Hierarchy)\n\n"
-        "Иерархия виджетов, layout, anchors, bindings и анимации появятся здесь после реализации экстрактора."
-    ));
+    Widget->SetText(Content.IsEmpty() ? FText::FromString("No Design") : Content);
+    // Widget->SetText(FText::FromString(
+    //     "### Design (Widget Hierarchy)\n\n"
+    //     "Иерархия виджетов, layout, anchors, bindings и анимации появятся здесь после реализации экстрактора."
+    // ));
     return Widget;
 }
 

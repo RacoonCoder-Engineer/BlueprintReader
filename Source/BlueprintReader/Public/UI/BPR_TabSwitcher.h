@@ -33,7 +33,7 @@ private:
 	void RebuildTabsFromData();
 
 	// Helper-фабрики для контента табов (расширяй по мере нужды)
-	TSharedRef<SWidget> CreateDesignTabContent() const;
+	TSharedRef<SWidget> CreateDesignTabContent(const FText& Content) const;
 	TSharedRef<SWidget> CreateStructureTabContent(const FText& Content) const;
 	TSharedRef<SWidget> CreateGraphTabContent(const FText& Content) const;
 	TSharedRef<SWidget> CreateErrorTabContent() const;

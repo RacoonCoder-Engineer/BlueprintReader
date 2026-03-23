@@ -11,6 +11,7 @@
 #include "Extractors/BPR_Extractor_Enum.h"
 #include "Extractors/BPR_Extractor_Structure.h"
 #include "Extractors/BPR_Extractor_InterfaceBP.h"
+#include "Extractors/BPR_Extractor_Widget.h"
 #include "Framework/Application/SlateApplication.h"
 #include "Widgets/SWindow.h"
 #include "Logging/LogMacros.h"
@@ -95,9 +96,9 @@ void BPR_Core::ExtractorSelector(UObject* Object)
         }
     case EAssetType::Widget:
         {
-            UE_LOG(LogTemp, Log, TEXT("BPR_Core: Using Widget extractor (пока Actor, позже заменим)"));
-            BPR_Extractor_Actor Extractor;          // PlaceHolder!!!
-            Extractor.ProcessActor(Object, TextData);
+            UE_LOG(LogTemp, Log, TEXT("BPR_Core: Using Widget extractor"));
+            BPR_Extractor_Widget Extractor;         
+            Extractor.ProcessWidget(Object, TextData);
             break;
         }
 
