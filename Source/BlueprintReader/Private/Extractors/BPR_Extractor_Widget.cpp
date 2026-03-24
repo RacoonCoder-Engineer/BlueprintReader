@@ -231,42 +231,71 @@ void BPR_Extractor_Widget::AppendVariables(UBlueprint* Blueprint, FString& OutTe
 //==============================================================================
 void BPR_Extractor_Widget::AppendWidgetTree(UWidgetBlueprint* WidgetBP, FString& OutDesignText)
 {
-    if (!WidgetBP || !WidgetBP->WidgetTree) 
+    if (!WidgetBP || !WidgetBP->WidgetTree)
     {
         OutDesignText += TEXT("No Widget Tree found.\n");
         return;
     }
 
-    OutDesignText += TEXT("## Widget Hierarchy\n");
-    OutDesignText += TEXT("Root: ") + WidgetBP->WidgetTree->RootWidget->GetName() + TEXT("\n");
+    const FWidgetRecursionSettings& Settings = GetRecursionSettings();
 
-    // Рекурсивный обход — пока заглушка
+    // Красивый заголовок с информацией о настройках рекурсии
+    FString DepthInfo = Settings.bRestrictDepth 
+        ? FString::Printf(TEXT(" [Recursion depth limit: %d]"), Settings.MaxDepth)
+        : TEXT(" [Recursion: unlimited]");
+
+    OutDesignText += FString::Printf(TEXT("## Design (Widget Tree) for %s%s\n\n"), 
+        *WidgetBP->GetName(), *DepthInfo);
+
+    if (WidgetBP->WidgetTree->RootWidget)
+    {
+        OutDesignText += FString::Printf(TEXT("Root: %s\n\n"), *WidgetBP->WidgetTree->RootWidget->GetName());
+    }
+
+    // Запускаем рекурсию с глубины 0
     TSet<UWidget*> VisitedWidgets;
-    ProcessWidgetHierarchy(WidgetBP->WidgetTree->RootWidget, WidgetBP, nullptr,  0, OutDesignText, VisitedWidgets);
+    ProcessWidgetHierarchy(
+        WidgetBP->WidgetTree->RootWidget,
+        nullptr,
+        WidgetBP,           // Передаём WidgetBP
+        0,                  // CurrentDepth = 0
+        OutDesignText,
+        VisitedWidgets
+    );
 }
 
 void BPR_Extractor_Widget::ProcessWidgetHierarchy(
     UWidget* Widget,
-    UWidgetBlueprint* WidgetBP,
     UPanelSlot* Slot,
-    int32 Indent,
+    UWidgetBlueprint* WidgetBP,
+    int32 CurrentDepth,
     FString& OutText,
     TSet<UWidget*>& Visited)
 {
-    if (!Widget || Visited.Contains(Widget)) return;
+    if (!Widget || !WidgetBP || Visited.Contains(Widget))
+        return;
 
     Visited.Add(Widget);
 
-    FString IndentStr = FString::ChrN(Indent * 2, ' ');
-    OutText += IndentStr + TEXT("- ") + GetWidgetTypeName(Widget) + TEXT(" (") + Widget->GetName() + TEXT(")\n");
+    FString IndentStr = FString::ChrN(CurrentDepth * 2, ' ');
 
-    AppendSlotProperties(Slot, OutText, Indent + 1);
-    AppendWidgetProperties(Widget, OutText, Indent + 1);
-    
-    // ← Вот сюда добавляем новый метод!
-    AppendWidgetEventBindings(Widget, WidgetBP, OutText, Indent + 1);   // ← Добавь эту строку
+    // ====================== ОГРАНИЧЕНИЕ ГЛУБИНЫ РЕКУРСИИ ======================
+    if (RecursionSettings.bRestrictDepth && CurrentDepth >= RecursionSettings.MaxDepth)
+    {
+        OutText += IndentStr + TEXT("└─ (...) Depth limit reached - nested widgets skipped\n\n");
+        return;
+    }
 
-    // Рекурсия по детям    
+    // ====================== Вывод текущего виджета ======================
+    OutText += IndentStr + TEXT("- ") + GetWidgetTypeName(Widget) 
+               + TEXT(" (") + Widget->GetName() + TEXT(")\n");
+
+    // Слот, свойства и биндинги событий
+    AppendSlotProperties(Slot, OutText, CurrentDepth + 1);
+    AppendWidgetProperties(Widget, OutText, CurrentDepth + 1);
+    AppendWidgetEventBindings(Widget, WidgetBP, OutText, CurrentDepth + 1);   // Теперь WidgetBP есть
+
+    // ====================== Рекурсия по детям ======================
     if (UPanelWidget* Panel = Cast<UPanelWidget>(Widget))
     {
         for (UWidget* Child : Panel->GetAllChildren())
@@ -274,7 +303,15 @@ void BPR_Extractor_Widget::ProcessWidgetHierarchy(
             if (!Child) continue;
 
             UPanelSlot* ChildSlot = Child->Slot;
-            ProcessWidgetHierarchy(Child, WidgetBP, ChildSlot,  Indent + 1, OutText, Visited);
+
+            ProcessWidgetHierarchy(
+                Child,
+                ChildSlot,
+                WidgetBP,           // Передаём дальше
+                CurrentDepth + 1,   // Увеличиваем глубину
+                OutText,
+                Visited
+            );
         }
     }
 }

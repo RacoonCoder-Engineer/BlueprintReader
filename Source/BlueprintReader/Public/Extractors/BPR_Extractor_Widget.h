@@ -97,15 +97,15 @@ private:
     /** Главный метод для обработки виджет-дерева */
     void AppendWidgetTree(UWidgetBlueprint* WidgetBP, FString& OutDesignText);
 
-    /** Рекурсивный обход иерархии виджетов */
+    /** Рекурсивный обход иерархии виджетов с контролем глубины рекурсии */
     void ProcessWidgetHierarchy(
         UWidget* Widget,
-        UWidgetBlueprint* WidgetBP,
         UPanelSlot* Slot,
-        int32 Indent,
+        UWidgetBlueprint* WidgetBP,   // Добавили
+        int32 CurrentDepth,
         FString& OutText,
         TSet<UWidget*>& Visited);
-
+    
     /** Форматирование одного виджета + его слота */
     FString FormatWidgetInfo(UWidget* Widget, UPanelSlot* Slot, int32 Indent);
 
