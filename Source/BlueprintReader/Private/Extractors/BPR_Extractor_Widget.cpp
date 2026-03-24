@@ -238,11 +238,12 @@ void BPR_Extractor_Widget::AppendWidgetTree(UWidgetBlueprint* WidgetBP, FString&
 
     // Рекурсивный обход — пока заглушка
     TSet<UWidget*> VisitedWidgets;
-    ProcessWidgetHierarchy(WidgetBP->WidgetTree->RootWidget, nullptr, 0, OutDesignText, VisitedWidgets);
+    ProcessWidgetHierarchy(WidgetBP->WidgetTree->RootWidget, WidgetBP, nullptr,  0, OutDesignText, VisitedWidgets);
 }
 
 void BPR_Extractor_Widget::ProcessWidgetHierarchy(
     UWidget* Widget,
+    UWidgetBlueprint* WidgetBP,
     UPanelSlot* Slot,
     int32 Indent,
     FString& OutText,
@@ -257,7 +258,9 @@ void BPR_Extractor_Widget::ProcessWidgetHierarchy(
 
     AppendSlotProperties(Slot, OutText, Indent + 1);
     AppendWidgetProperties(Widget, OutText, Indent + 1);
-    AppendWidgetBindings(Widget, OutText, Indent + 1);
+    
+    // ← Вот сюда добавляем новый метод!
+    AppendWidgetEventBindings(Widget, WidgetBP, OutText, Indent + 1);   // ← Добавь эту строку
 
     // Рекурсия по детям    
     if (UPanelWidget* Panel = Cast<UPanelWidget>(Widget))
@@ -267,8 +270,7 @@ void BPR_Extractor_Widget::ProcessWidgetHierarchy(
             if (!Child) continue;
 
             UPanelSlot* ChildSlot = Child->Slot;
-
-            ProcessWidgetHierarchy(Child, ChildSlot, Indent + 1, OutText, Visited);
+            ProcessWidgetHierarchy(Child, WidgetBP, ChildSlot,  Indent + 1, OutText, Visited);
         }
     }
 }
@@ -297,46 +299,46 @@ void BPR_Extractor_Widget::AppendSlotProperties(UPanelSlot* Slot, FString& OutTe
         OutText += IndentStr + FString::Printf(TEXT("  - Offsets: L:%.0f T:%.0f R:%.0f B:%.0f\n"),
             Offsets.Left, Offsets.Top, Offsets.Right, Offsets.Bottom);
         OutText += IndentStr + FString::Printf(TEXT("  - AutoSize: %s | ZOrder: %d\n"),
-            CanvasSlot->bAutoSize ? TEXT("True") : TEXT("False"), CanvasSlot->ZOrder);
+            CanvasSlot->GetAutoSize() ? TEXT("True") : TEXT("False"), CanvasSlot->GetZOrder());
     }
     // ==================== HorizontalBoxSlot ====================
     else if (UHorizontalBoxSlot* HBoxSlot = Cast<UHorizontalBoxSlot>(Slot))
     {
         OutText += IndentStr + TEXT("  - Type: HorizontalBoxSlot\n");
         OutText += IndentStr + FString::Printf(TEXT("  - Horizontal Alignment: %s\n"),
-            *UEnum::GetValueAsString(HBoxSlot->HorizontalAlignment));
+            *UEnum::GetValueAsString(HBoxSlot->GetHorizontalAlignment()));
         OutText += IndentStr + FString::Printf(TEXT("  - Vertical Alignment: %s\n"),
-            *UEnum::GetValueAsString(HBoxSlot->VerticalAlignment));
+            *UEnum::GetValueAsString(HBoxSlot->GetVerticalAlignment()));
         OutText += IndentStr + FString::Printf(TEXT("  - Size Rule: %s (Value: %.2f)\n"),
-            *UEnum::GetValueAsString(HBoxSlot->Size.SizeRule), HBoxSlot->Size.Value);
+            *UEnum::GetValueAsString(HBoxSlot->GetSize().SizeRule), HBoxSlot->GetSize().Value);
     }
     // ==================== VerticalBoxSlot ====================
     else if (UVerticalBoxSlot* VBoxSlot = Cast<UVerticalBoxSlot>(Slot))
     {
         OutText += IndentStr + TEXT("  - Type: VerticalBoxSlot\n");
         OutText += IndentStr + FString::Printf(TEXT("  - Horizontal Alignment: %s\n"),
-            *UEnum::GetValueAsString(VBoxSlot->HorizontalAlignment));
+            *UEnum::GetValueAsString(VBoxSlot->GetHorizontalAlignment()));
         OutText += IndentStr + FString::Printf(TEXT("  - Vertical Alignment: %s\n"),
-            *UEnum::GetValueAsString(VBoxSlot->VerticalAlignment));
+            *UEnum::GetValueAsString(VBoxSlot->GetVerticalAlignment()));
         OutText += IndentStr + FString::Printf(TEXT("  - Size Rule: %s (Value: %.2f)\n"),
-            *UEnum::GetValueAsString(VBoxSlot->Size.SizeRule), VBoxSlot->Size.Value);
+            *UEnum::GetValueAsString(VBoxSlot->GetSize().SizeRule), VBoxSlot->GetSize().Value);
     }
     // ==================== OverlaySlot ====================
     else if (UOverlaySlot* OverlaySlot = Cast<UOverlaySlot>(Slot))
     {
         OutText += IndentStr + TEXT("  - Type: OverlaySlot\n");
         OutText += IndentStr + FString::Printf(TEXT("  - Padding: L:%.0f T:%.0f R:%.0f B:%.0f\n"),
-            OverlaySlot->Padding.Left, OverlaySlot->Padding.Top,
-            OverlaySlot->Padding.Right, OverlaySlot->Padding.Bottom);
+            OverlaySlot->GetPadding().Left, OverlaySlot->GetPadding().Top,
+            OverlaySlot->GetPadding().Right, OverlaySlot->GetPadding().Bottom);
     }
     // ==================== SizeBoxSlot ====================
     else if (USizeBoxSlot* SizeBoxSlot = Cast<USizeBoxSlot>(Slot))
     {
         OutText += IndentStr + TEXT("  - Type: SizeBoxSlot\n");
         OutText += IndentStr + FString::Printf(TEXT("  - Horizontal Alignment: %s\n"),
-            *UEnum::GetValueAsString(SizeBoxSlot->HorizontalAlignment));
+            *UEnum::GetValueAsString(SizeBoxSlot->GetHorizontalAlignment()));
         OutText += IndentStr + FString::Printf(TEXT("  - Vertical Alignment: %s\n"),
-            *UEnum::GetValueAsString(SizeBoxSlot->VerticalAlignment));
+            *UEnum::GetValueAsString(SizeBoxSlot->GetVerticalAlignment()));
     }
     else
     {
@@ -1368,4 +1370,61 @@ bool BPR_Extractor_Widget::HasExecInput(UEdGraphNode* Node)
     }
 
     return false;
+}
+
+void BPR_Extractor_Widget::AppendWidgetEventBindings(UWidget* Widget, UWidgetBlueprint* WidgetBP, FString& OutText, int32 Indent)
+{
+    if (!Widget || !WidgetBP) return;
+
+    FString IndentStr = FString::ChrN(Indent * 2, ' ');
+    OutText += IndentStr + TEXT("Event Bindings:\n");
+
+    bool bHasAnyBinding = false;
+
+    for (UEdGraph* Graph : WidgetBP->UbergraphPages)
+    {
+        if (!Graph) continue;
+
+        for (UEdGraphNode* Node : Graph->Nodes)
+        {
+            UK2Node_ComponentBoundEvent* BoundEvent = Cast<UK2Node_ComponentBoundEvent>(Node);
+            if (!BoundEvent) continue;
+
+            if (BoundEvent->GetComponentPropertyName().ToString().Equals(Widget->GetName(), ESearchCase::CaseSensitive))
+            {
+                bHasAnyBinding = true;
+
+                // Имя события
+                FString EventName = TEXT("UnknownEvent");
+                if (FText DisplayName = BoundEvent->GetTargetDelegateDisplayName(); !DisplayName.IsEmpty())
+                {
+                    EventName = DisplayName.ToString();
+                }
+                else if (FMulticastDelegateProperty* DelegateProp = BoundEvent->GetTargetDelegateProperty())
+                {
+                    EventName = DelegateProp->GetName();   // исправлено
+                }
+
+                // Имя функции-обработчика
+                FString FunctionName = BoundEvent->EventReference.GetMemberName().ToString();
+                if (FunctionName.IsEmpty())
+                {
+                    FunctionName = TEXT("UnknownFunction");
+                }
+                else
+                {
+                    FunctionName = CleanName(FunctionName);   // рекомендуется
+                }
+
+                OutText += IndentStr + FString::Printf(TEXT("  - %s → %s\n"), *EventName, *FunctionName);
+            }
+        }
+    }
+
+    if (!bHasAnyBinding)
+    {
+        OutText += IndentStr + TEXT("  - No event bindings found\n");
+    }
+
+    OutText += TEXT("\n");
 }

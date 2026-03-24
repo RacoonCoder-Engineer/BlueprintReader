@@ -88,6 +88,7 @@ private:
     /** Рекурсивный обход иерархии виджетов */
     void ProcessWidgetHierarchy(
         UWidget* Widget,
+        UWidgetBlueprint* WidgetBP,
         UPanelSlot* Slot,
         int32 Indent,
         FString& OutText,
@@ -110,4 +111,8 @@ private:
 
     /** Получение читаемого имени класса виджета */
     FString GetWidgetTypeName(UWidget* Widget);
+    
+    /** Event Bindings с указанием, к каким функциям они привязаны */
+    void AppendWidgetEventBindings(UWidget* Widget, UWidgetBlueprint* WidgetBP, FString& OutText, int32 Indent);
+    
 };
