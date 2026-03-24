@@ -239,11 +239,11 @@ void BPR_Extractor_Widget::AppendWidgetTree(UWidgetBlueprint* WidgetBP, FString&
 
     const FWidgetRecursionSettings& Settings = GetRecursionSettings();
 
-    // Красивый заголовок с информацией о настройках рекурсии
     FString DepthInfo = Settings.bRestrictDepth 
         ? FString::Printf(TEXT(" [Recursion depth limit: %d]"), Settings.MaxDepth)
         : TEXT(" [Recursion: unlimited]");
 
+    // Один чистый заголовок
     OutDesignText += FString::Printf(TEXT("## Design (Widget Tree) for %s%s\n\n"), 
         *WidgetBP->GetName(), *DepthInfo);
 
@@ -252,13 +252,12 @@ void BPR_Extractor_Widget::AppendWidgetTree(UWidgetBlueprint* WidgetBP, FString&
         OutDesignText += FString::Printf(TEXT("Root: %s\n\n"), *WidgetBP->WidgetTree->RootWidget->GetName());
     }
 
-    // Запускаем рекурсию с глубины 0
     TSet<UWidget*> VisitedWidgets;
     ProcessWidgetHierarchy(
         WidgetBP->WidgetTree->RootWidget,
         nullptr,
-        WidgetBP,           // Передаём WidgetBP
-        0,                  // CurrentDepth = 0
+        WidgetBP,
+        0,
         OutDesignText,
         VisitedWidgets
     );
@@ -290,12 +289,36 @@ void BPR_Extractor_Widget::ProcessWidgetHierarchy(
     OutText += IndentStr + TEXT("- ") + GetWidgetTypeName(Widget) 
                + TEXT(" (") + Widget->GetName() + TEXT(")\n");
 
-    // Слот, свойства и биндинги событий
+    // ====================== ОСОБАЯ ОБРАБОТКА КАСТОМНЫХ USER WIDGET ======================
+    if (UUserWidget* UserWidget = Cast<UUserWidget>(Widget))
+    {
+        if (UserWidget->WidgetTree && UserWidget->WidgetTree->RootWidget)
+        {
+            // Показываем, что это вложенный UserWidget и мы сейчас нырнём внутрь
+            OutText += IndentStr + TEXT("  └─ [Nested UserWidget Tree]\n");
+
+            // Рекурсивно разбираем внутреннее дерево виджета
+            ProcessWidgetHierarchy(
+                UserWidget->WidgetTree->RootWidget,
+                nullptr,           // у root виджета слота нет
+                WidgetBP,
+                CurrentDepth + 1,
+                OutText,
+                Visited
+            );
+
+            // После разбора внутреннего дерева выходим — не нужно обрабатывать его как обычный виджет
+            OutText += TEXT("\n");
+            return;
+        }
+    }
+
+    // ====================== ОБЫЧНАЯ ОБРАБОТКА НАТИВНЫХ ВИДЖЕТОВ ======================
     AppendSlotProperties(Slot, OutText, CurrentDepth + 1);
     AppendWidgetProperties(Widget, OutText, CurrentDepth + 1);
-    AppendWidgetEventBindings(Widget, WidgetBP, OutText, CurrentDepth + 1);   // Теперь WidgetBP есть
+    AppendWidgetEventBindings(Widget, WidgetBP, OutText, CurrentDepth + 1);
 
-    // ====================== Рекурсия по детям ======================
+    // ====================== Рекурсия по детям (для PanelWidget) ======================
     if (UPanelWidget* Panel = Cast<UPanelWidget>(Widget))
     {
         for (UWidget* Child : Panel->GetAllChildren())
@@ -307,13 +330,15 @@ void BPR_Extractor_Widget::ProcessWidgetHierarchy(
             ProcessWidgetHierarchy(
                 Child,
                 ChildSlot,
-                WidgetBP,           // Передаём дальше
-                CurrentDepth + 1,   // Увеличиваем глубину
+                WidgetBP,
+                CurrentDepth + 1,
                 OutText,
                 Visited
             );
         }
     }
+
+    OutText += TEXT("\n");   // разделяем виджеты пустой строкой для читаемости
 }
 
 void BPR_Extractor_Widget::AppendSlotProperties(UPanelSlot* Slot, FString& OutText, int32 Indent)
