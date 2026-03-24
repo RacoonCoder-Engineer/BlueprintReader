@@ -7,6 +7,12 @@
 #include "CoreMinimal.h"
 #include "Core/BPR_Core.h"
 
+struct FWidgetRecursionSettings
+{
+    int32 MaxDepth = 10;           
+    bool bRestrictDepth = true;
+};
+
 // Forward declarations
 class UWidgetBlueprint;
 class UWidgetTree;
@@ -36,6 +42,12 @@ public:
     // --------------------------------
     /** Processes the selected Widget Blueprint, fills Structure/Graph/Design */
     void ProcessWidget(UObject* SelectedObject, FBPR_ExtractedData& OutData);
+    
+    /** Устанавливает настройки рекурсии для обработки виджетов */
+    void SetRecursionSettings(const FWidgetRecursionSettings& InSettings);
+
+    /** Возвращает текущие настройки рекурсии (для отладки или чтения) */
+    const FWidgetRecursionSettings& GetRecursionSettings() const;
 
 private:
     // -------------------------------
@@ -114,5 +126,7 @@ private:
     
     /** Event Bindings с указанием, к каким функциям они привязаны */
     void AppendWidgetEventBindings(UWidget* Widget, UWidgetBlueprint* WidgetBP, FString& OutText, int32 Indent);
+    
+    FWidgetRecursionSettings RecursionSettings;
     
 };

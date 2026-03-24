@@ -95,7 +95,11 @@
 #include "Layout/Margin.h"
 #include "UObject/ObjectMacros.h"
 
-BPR_Extractor_Widget::BPR_Extractor_Widget() {}
+BPR_Extractor_Widget::BPR_Extractor_Widget()
+{
+    RecursionSettings.MaxDepth = 10;
+    RecursionSettings.bRestrictDepth = true;
+}
 BPR_Extractor_Widget::~BPR_Extractor_Widget() {}
 
 //==============================================================================
@@ -1427,4 +1431,33 @@ void BPR_Extractor_Widget::AppendWidgetEventBindings(UWidget* Widget, UWidgetBlu
     }
 
     OutText += TEXT("\n");
+}
+
+//==============================================================================
+// Recursion Settings API
+//==============================================================================
+
+void BPR_Extractor_Widget::SetRecursionSettings(const FWidgetRecursionSettings& InSettings)
+{
+    // Валидация: глубина не может быть меньше 1
+    if (InSettings.MaxDepth < 1)
+    {
+        LogWarning(FString::Printf(TEXT("SetRecursionSettings: MaxDepth cannot be less than 1. Value %d was clamped to 1."), InSettings.MaxDepth));
+        RecursionSettings.MaxDepth = 1;
+    }
+    else
+    {
+        RecursionSettings.MaxDepth = InSettings.MaxDepth;
+    }
+
+    RecursionSettings.bRestrictDepth = InSettings.bRestrictDepth;
+
+    LogMessage(FString::Printf(TEXT("Recursion settings updated: MaxDepth = %d, Restricted = %s"),
+        RecursionSettings.MaxDepth,
+        RecursionSettings.bRestrictDepth ? TEXT("True") : TEXT("False")));
+}
+
+const FWidgetRecursionSettings& BPR_Extractor_Widget::GetRecursionSettings() const
+{
+    return RecursionSettings;
 }
