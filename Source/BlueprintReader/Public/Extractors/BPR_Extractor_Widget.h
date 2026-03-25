@@ -7,6 +7,36 @@
 #include "CoreMinimal.h"
 #include "Core/BPR_Core.h"
 
+// Новые инклюды для виджетов
+#include "Blueprint/UserWidget.h"
+#include "WidgetBlueprint.h"
+#include "Components/Widget.h"
+#include "Components/PanelSlot.h"
+#include "Components/PanelWidget.h"
+#include "Components/WidgetComponent.h"
+#include "Blueprint/WidgetTree.h"
+#include "Animation/WidgetAnimation.h"
+#include "Components/CanvasPanelSlot.h"
+#include "Components/HorizontalBoxSlot.h"
+#include "Components/VerticalBoxSlot.h"
+#include "Components/OverlaySlot.h"
+#include "Components/SizeBoxSlot.h"
+#include "Styling/SlateColor.h"         
+#include "Layout/Visibility.h"          
+#include "Slate/WidgetTransform.h"
+#include "Components/TextBlock.h"
+#include "Components/Image.h"
+#include "Components/Button.h"
+#include "Components/Border.h"
+#include "Components/ProgressBar.h"
+#include "Styling/SlateColor.h"
+#include "Widgets/Text/STextBlock.h"
+#include "UObject/UnrealType.h"
+#include "Internationalization/Text.h"
+#include "Styling/SlateTypes.h"
+#include "Layout/Margin.h"
+#include "UObject/ObjectMacros.h"
+
 struct FWidgetRecursionSettings
 {
     int32 MaxDepth = 10;           
@@ -128,5 +158,26 @@ private:
     void AppendWidgetEventBindings(UWidget* Widget, UWidgetBlueprint* WidgetBP, FString& OutText, int32 Indent);
     
     FWidgetRecursionSettings RecursionSettings;
+    
+    /** Добавляет общие свойства, которые есть у любого UWidget */
+    void AppendCommonProperties(UWidget* Widget, FString& OutText, int32 Indent);
+
+    /** Добавляет специфические свойства в зависимости от типа виджета */
+    void AppendWidgetTypeProperties(UWidget* Widget, FString& OutText, int32 Indent);
+    
+    // Handlers
+    
+    /** Обрабатывает специфические свойства UTextBlock */
+    void HandleTextBlockProperties(UTextBlock* TextBlock, FString& OutText, int32 Indent);
+    /** Обрабатывает специфические свойства UImage */
+    void HandleImageProperties(UImage* Image, FString& OutText, int32 Indent);
+    /** Обрабатывает специфические свойства UButton */
+    void HandleButtonProperties(UButton* Button, FString& OutText, int32 Indent);
+    /** Обрабатывает специфические свойства UBorder */
+    void HandleBorderProperties(UBorder* Border, FString& OutText, int32 Indent);
+    /** Обрабатывает специфические свойства UProgressBar */
+    void HandleProgressBarProperties(UProgressBar* ProgressBar, FString& OutText, int32 Indent);
+    /** Обработка неизвестных или кастомных виджетов (fallback) */
+    void HandleUnknownWidget(UWidget* Widget, FString& OutText, int32 Indent);
     
 };

@@ -1523,3 +1523,418 @@ const FWidgetRecursionSettings& BPR_Extractor_Widget::GetRecursionSettings() con
 {
     return RecursionSettings;
 }
+
+//==============================================================================
+// Common Properties
+//==============================================================================
+
+void BPR_Extractor_Widget::AppendCommonProperties(UWidget* Widget, FString& OutText, int32 Indent)
+{
+    if (!Widget) return;
+
+    FString IndentStr = FString::ChrN(Indent * 2, ' ');
+
+    // Общие свойства для всех виджетов
+    OutText += IndentStr + FString::Printf(TEXT("  - Visibility: %s\n"),
+        *UEnum::GetValueAsString(Widget->GetVisibility()));
+
+    OutText += IndentStr + FString::Printf(TEXT("  - Is Enabled: %s\n"),
+        Widget->GetIsEnabled() ? TEXT("True") : TEXT("False"));
+
+    float Opacity = Widget->GetRenderOpacity();
+    OutText += IndentStr + FString::Printf(TEXT("  - Render Opacity: %.2f\n"), Opacity);
+
+    FWidgetTransform Transform = Widget->GetRenderTransform();
+    if (!Transform.IsIdentity())
+    {
+        OutText += IndentStr + TEXT("  - Render Transform:\n");
+        OutText += IndentStr + FString::Printf(TEXT("    - Scale: %.2f x %.2f\n"),
+            Transform.Scale.X, Transform.Scale.Y);
+        OutText += IndentStr + FString::Printf(TEXT("    - Rotation: %.1f deg\n"),
+            Transform.Angle);
+        OutText += IndentStr + FString::Printf(TEXT("    - Translation: X:%.0f Y:%.0f\n"),
+            Transform.Translation.X, Transform.Translation.Y);
+    }
+}
+
+//==============================================================================
+// Widget Type Specific Properties
+//==============================================================================
+
+void BPR_Extractor_Widget::AppendWidgetTypeProperties(UWidget* Widget, FString& OutText, int32 Indent)
+{
+    if (!Widget) return;
+
+    FString IndentStr = FString::ChrN(Indent * 2, ' ');
+
+    // Специфические обработчики по типу виджета
+    if (UTextBlock* TextBlock = Cast<UTextBlock>(Widget))
+    {
+        HandleTextBlockProperties(TextBlock, OutText, Indent);
+    }
+    else if (UImage* Image = Cast<UImage>(Widget))
+    {
+        HandleImageProperties(Image, OutText, Indent);
+    }
+    else if (UButton* Button = Cast<UButton>(Widget))
+    {
+        HandleButtonProperties(Button, OutText, Indent);
+    }
+    else if (UBorder* Border = Cast<UBorder>(Widget))
+    {
+        HandleBorderProperties(Border, OutText, Indent);
+    }
+    else if (UProgressBar* Progress = Cast<UProgressBar>(Widget))
+    {
+        HandleProgressBarProperties(Progress, OutText, Indent);
+    }
+    else
+    {
+        // Fallback для всех остальных виджетов (включая RichTextBlock пока)
+        HandleUnknownWidget(Widget, OutText, Indent);
+    }
+}
+
+void BPR_Extractor_Widget::HandleTextBlockProperties(UTextBlock* TextBlock, FString& OutText, int32 Indent)
+{
+    if (!TextBlock) return;
+
+    FString IndentStr = FString::ChrN(Indent * 2, ' ');
+
+    OutText += IndentStr + TEXT("  - TextBlock Properties:\n");
+
+    // Основной текст
+    FText BlockText = TextBlock->GetText();
+    OutText += IndentStr + FString::Printf(TEXT("    - Text: \"%s\"\n"), 
+        *BlockText.ToString());
+
+    // Шрифт
+    FSlateFontInfo Font = TextBlock->GetFont();
+    OutText += IndentStr + FString::Printf(TEXT("    - Font Size: %d\n"), (int32)Font.Size);
+
+    // Правильная проверка
+    if (const UObject* FontObj = Font.FontObject.Get())
+    {
+        OutText += IndentStr + FString::Printf(TEXT("    - Font: %s\n"), 
+            *FontObj->GetName());
+    }
+
+    // Justification (выравнивание)
+    static const FName JustificationPropName(TEXT("Justification"));
+    if (FProperty* Prop = TextBlock->GetClass()->FindPropertyByName(JustificationPropName))
+    {
+        if (FByteProperty* ByteProp = CastField<FByteProperty>(Prop))
+        {
+            uint8 RawValue = 0;
+            ByteProp->GetValue_InContainer(TextBlock, &RawValue);
+            ETextJustify::Type Justification = static_cast<ETextJustify::Type>(RawValue);
+
+            OutText += IndentStr + FString::Printf(TEXT("    - Justification: %s\n"),
+                *UEnum::GetValueAsString(Justification));
+        }
+    }
+
+    // Цвет текста
+    FSlateColor TextColor = TextBlock->GetColorAndOpacity();
+    FLinearColor LinearColor = TextColor.GetSpecifiedColor();
+    OutText += IndentStr + FString::Printf(TEXT("    - Text Color: R:%.2f G:%.2f B:%.2f A:%.2f\n"),
+        LinearColor.R, LinearColor.G, LinearColor.B, LinearColor.A);
+
+    // Дополнительные полезные свойства
+    OutText += IndentStr + FString::Printf(TEXT("    - Auto Wrap Text: %s\n"),
+    TextBlock->GetAutoWrapText() ? TEXT("Yes") : TEXT("No"));
+
+    if (float WrapAt = TextBlock->GetWrapTextAt(); WrapAt > 0.0f)
+    {
+        OutText += IndentStr + FString::Printf(TEXT("    - Wrap Text At: %.0f\n"), WrapAt);
+    }
+}
+
+void BPR_Extractor_Widget::HandleImageProperties(UImage* Image, FString& OutText, int32 Indent)
+{
+    if (!Image) return;
+
+    FString IndentStr = FString::ChrN(Indent * 2, ' ');
+
+    OutText += IndentStr + TEXT("  - Image Properties:\n");
+
+    // Brush (основная картинка)
+    FSlateBrush Brush = Image->GetBrush();
+
+    if (Brush.GetResourceObject())
+    {
+        OutText += IndentStr + FString::Printf(TEXT("    - Brush: %s\n"), 
+            *Brush.GetResourceObject()->GetName());
+
+        // Размер изображения
+        if (Brush.ImageSize.X > 0 || Brush.ImageSize.Y > 0)
+        {
+            OutText += IndentStr + FString::Printf(TEXT("    - Image Size: %.0f x %.0f\n"),
+                Brush.ImageSize.X, Brush.ImageSize.Y);
+        }
+    }
+    else
+    {
+        OutText += IndentStr + TEXT("    - Brush: None\n");
+    }
+
+    // Цвет tint (TintColor)
+    FSlateColor TintColor = Brush.TintColor;
+    FLinearColor LinearColor = TintColor.GetSpecifiedColor();
+
+    OutText += IndentStr + FString::Printf(TEXT("    - Tint Color: R:%.2f G:%.2f B:%.2f A:%.2f\n"),
+        LinearColor.R, LinearColor.G, LinearColor.B, LinearColor.A);
+
+    // Дополнительная информация о brush
+    if (Brush.DrawAs != ESlateBrushDrawType::NoDrawType)
+    {
+        OutText += IndentStr + FString::Printf(TEXT("    - Draw As: %s\n"),
+            *UEnum::GetValueAsString(Brush.DrawAs));
+    }
+
+    
+    // Margin (если используется)
+    if (Brush.Margin.Left != 0.0f || Brush.Margin.Top != 0.0f || 
+        Brush.Margin.Right != 0.0f || Brush.Margin.Bottom != 0.0f)
+    {
+        OutText += IndentStr + FString::Printf(TEXT("    - Margin: L:%.1f T:%.1f R:%.1f B:%.1f\n"),
+            Brush.Margin.Left, Brush.Margin.Top, Brush.Margin.Right, Brush.Margin.Bottom);
+    }
+
+    // Тiling
+    if (Brush.Tiling != ESlateBrushTileType::NoTile)
+    {
+        OutText += IndentStr + FString::Printf(TEXT("    - Tiling: %s\n"),
+            *UEnum::GetValueAsString(Brush.Tiling));
+    }
+}
+
+void BPR_Extractor_Widget::HandleButtonProperties(UButton* Button, FString& OutText, int32 Indent)
+{
+    if (!Button) return;
+
+    FString IndentStr = FString::ChrN(Indent * 2, ' ');
+
+    OutText += IndentStr + TEXT("  - Button Properties:\n");
+
+    // Color & Opacity
+    FSlateColor ButtonColor = Button->GetColorAndOpacity();
+    FLinearColor LinearColor = ButtonColor.GetSpecifiedColor();
+
+    OutText += IndentStr + FString::Printf(TEXT("    - Color & Opacity: R:%.2f G:%.2f B:%.2f A:%.2f\n"),
+        LinearColor.R, LinearColor.G, LinearColor.B, LinearColor.A);
+
+    // Стили кнопки (звуки теперь здесь)
+    const FButtonStyle& Style = Button->GetStyle();
+
+    // Pressed Sound
+    if (Style.PressedSlateSound.GetResourceObject())
+    {
+        OutText += IndentStr + FString::Printf(TEXT("    - Pressed Sound: %s\n"),
+            *Style.PressedSlateSound.GetResourceObject()->GetName());
+    }
+
+    // Hovered Sound
+    if (Style.HoveredSlateSound.GetResourceObject())
+    {
+        OutText += IndentStr + FString::Printf(TEXT("    - Hovered Sound: %s\n"),
+            *Style.HoveredSlateSound.GetResourceObject()->GetName());
+    }
+
+    // Is Clickable
+    OutText += IndentStr + FString::Printf(TEXT("    - Is Clickable: %s\n"),
+        Button->GetIsEnabled() ? TEXT("True") : TEXT("False"));
+
+    // Interaction Methods
+    OutText += IndentStr + FString::Printf(TEXT("    - Touch Method: %s\n"),
+        *UEnum::GetValueAsString(Button->GetTouchMethod()));
+
+    OutText += IndentStr + FString::Printf(TEXT("    - Click Method: %s\n"),
+        *UEnum::GetValueAsString(Button->GetClickMethod()));
+
+    OutText += IndentStr + FString::Printf(TEXT("    - Press Method: %s\n"),
+        *UEnum::GetValueAsString(Button->GetPressMethod()));
+}
+
+void BPR_Extractor_Widget::HandleBorderProperties(UBorder* Border, FString& OutText, int32 Indent)
+{
+    if (!Border) return;
+
+    FString IndentStr = FString::ChrN(Indent * 2, ' ');
+
+    OutText += IndentStr + TEXT("  - Border Properties:\n");
+
+    // Brush Color
+    FLinearColor BrushColor = Border->GetBrushColor();
+    OutText += IndentStr + FString::Printf(TEXT("    - Brush Color: R:%.2f G:%.2f B:%.2f A:%.2f\n"),
+        BrushColor.R, BrushColor.G, BrushColor.B, BrushColor.A);
+
+    // Основная кисть (Background)
+    const FSlateBrush& Brush = Border->Background;
+
+    if (Brush.GetResourceObject())
+    {
+        OutText += IndentStr + FString::Printf(TEXT("    - Brush: %s\n"), 
+            *Brush.GetResourceObject()->GetName());
+
+        if (Brush.ImageSize.X > 0.0f || Brush.ImageSize.Y > 0.0f)
+        {
+            OutText += IndentStr + FString::Printf(TEXT("    - Image Size: %.0f x %.0f\n"),
+                Brush.ImageSize.X, Brush.ImageSize.Y);
+        }
+    }
+    else
+    {
+        OutText += IndentStr + TEXT("    - Brush: None\n");
+    }
+
+    // Margin бордера
+    if (Brush.Margin.Left != 0.0f || Brush.Margin.Top != 0.0f || 
+        Brush.Margin.Right != 0.0f || Brush.Margin.Bottom != 0.0f)
+    {
+        OutText += IndentStr + FString::Printf(TEXT("    - Margin: L:%.1f T:%.1f R:%.1f B:%.1f\n"),
+            Brush.Margin.Left, Brush.Margin.Top, Brush.Margin.Right, Brush.Margin.Bottom);
+    }
+
+    // Draw As
+    if (Brush.DrawAs != ESlateBrushDrawType::NoDrawType)
+    {
+        OutText += IndentStr + FString::Printf(TEXT("    - Draw As: %s\n"),
+            *UEnum::GetValueAsString(Brush.DrawAs));
+    }
+
+    // Content Padding (очень важное свойство)
+    FMargin ContentPadding = Border->GetPadding();
+    if (ContentPadding.Left != 0.0f || ContentPadding.Top != 0.0f || 
+        ContentPadding.Right != 0.0f || ContentPadding.Bottom != 0.0f)
+    {
+        OutText += IndentStr + FString::Printf(TEXT("    - Content Padding: L:%.1f T:%.1f R:%.1f B:%.1f\n"),
+            ContentPadding.Left, ContentPadding.Top, 
+            ContentPadding.Right, ContentPadding.Bottom);
+    }
+
+    // Выравнивание содержимого
+    OutText += IndentStr + FString::Printf(TEXT("    - Horizontal Alignment: %s\n"),
+        *UEnum::GetValueAsString(Border->GetHorizontalAlignment()));
+
+    OutText += IndentStr + FString::Printf(TEXT("    - Vertical Alignment: %s\n"),
+        *UEnum::GetValueAsString(Border->GetVerticalAlignment()));
+}
+
+void BPR_Extractor_Widget::HandleProgressBarProperties(UProgressBar* ProgressBar, FString& OutText, int32 Indent)
+{
+    if (!ProgressBar) return;
+
+    FString IndentStr = FString::ChrN(Indent * 2, ' ');
+
+    OutText += IndentStr + TEXT("  - ProgressBar Properties:\n");
+
+    // Текущий прогресс
+    float Percent = ProgressBar->GetPercent();
+    OutText += IndentStr + FString::Printf(TEXT("    - Percent: %.2f%%\n"), Percent * 100.0f);
+
+    // Fill Color
+    FSlateColor FillColor = ProgressBar->GetFillColorAndOpacity();
+    FLinearColor LinearFill = FillColor.GetSpecifiedColor();
+    OutText += IndentStr + FString::Printf(TEXT("    - Fill Color: R:%.2f G:%.2f B:%.2f A:%.2f\n"),
+        LinearFill.R, LinearFill.G, LinearFill.B, LinearFill.A);
+
+    // Основной стиль
+    const FProgressBarStyle& Style = ProgressBar->GetWidgetStyle();
+
+    // Background Image
+    if (Style.BackgroundImage.GetResourceObject())
+    {
+        OutText += IndentStr + FString::Printf(TEXT("    - Background Brush: %s\n"),
+            *Style.BackgroundImage.GetResourceObject()->GetName());
+    }
+
+    // Fill Image
+    if (Style.FillImage.GetResourceObject())
+    {
+        OutText += IndentStr + FString::Printf(TEXT("    - Fill Brush: %s\n"),
+            *Style.FillImage.GetResourceObject()->GetName());
+    }
+
+    // Marquee Image (для бегущей строки)
+    if (Style.MarqueeImage.GetResourceObject())
+    {
+        OutText += IndentStr + FString::Printf(TEXT("    - Marquee Brush: %s\n"),
+            *Style.MarqueeImage.GetResourceObject()->GetName());
+    }
+
+    // Дополнительные параметры
+    OutText += IndentStr + FString::Printf(TEXT("    - Fill Type: %s\n"),
+        *UEnum::GetValueAsString(ProgressBar->GetBarFillType()));
+
+    OutText += IndentStr + FString::Printf(TEXT("    - Fill Style: %s\n"),
+        *UEnum::GetValueAsString(ProgressBar->GetBarFillStyle()));
+
+    OutText += IndentStr + FString::Printf(TEXT("    - Is Marquee: %s\n"),
+        ProgressBar->UseMarquee() ? TEXT("True") : TEXT("False"));
+
+    OutText += IndentStr + FString::Printf(TEXT("    - Is Enabled: %s\n"),
+        ProgressBar->GetIsEnabled() ? TEXT("True") : TEXT("False"));
+}
+
+void BPR_Extractor_Widget::HandleUnknownWidget(UWidget* Widget, FString& OutText, int32 Indent)
+{
+    if (!Widget) return;
+
+    FString IndentStr = FString::ChrN(Indent * 2, ' ');
+
+    // Основная информация
+    OutText += IndentStr + TEXT("  - Widget Properties:\n");
+    OutText += IndentStr + FString::Printf(TEXT("    - Class: %s\n"), 
+        *Widget->GetClass()->GetName());
+
+    // Имя, если оно осмысленное (не сгенерированное Unreal'ом)
+    FString WidgetName = Widget->GetName();
+    if (!WidgetName.StartsWith(TEXT("BP_")) && 
+        !WidgetName.Contains(TEXT("_C_")) && 
+        !WidgetName.Contains(TEXT("Widget_")))
+    {
+        OutText += IndentStr + FString::Printf(TEXT("    - Name: %s\n"), *WidgetName);
+    }
+
+    // Если это UserWidget — покажем, что у него есть свой WidgetTree
+    if (Widget->IsA<UUserWidget>())
+    {
+        OutText += IndentStr + TEXT("    - Type: Custom UserWidget (has internal Widget Tree)\n");
+    }
+    else
+    {
+        OutText += IndentStr + TEXT("    - Type: Native / Custom Widget\n");
+    }
+
+    // Попытка вывести важные свойства через reflection (для неизвестных виджетов)
+    static const FName TextPropertyName(TEXT("Text"));
+    if (FProperty* TextProp = Widget->GetClass()->FindPropertyByName(TextPropertyName))
+    {
+        if (FTextProperty* TextPropTyped = CastField<FTextProperty>(TextProp))
+        {
+            FText Value;
+            TextPropTyped->GetValue_InContainer(Widget, &Value);
+            if (!Value.IsEmpty())
+            {
+                OutText += IndentStr + FString::Printf(TEXT("    - Text: \"%s\"\n"), *Value.ToString());
+            }
+        }
+    }
+
+    // Дополнительно: категория, если есть
+    FString Category = Widget->GetClass()->GetMetaData(TEXT("Category"));
+    if (!Category.IsEmpty())
+    {
+        OutText += IndentStr + FString::Printf(TEXT("    - Category: %s\n"), *Category);
+    }
+
+    // Логируем только один раз за запуск (чтобы не спамить)
+    static TSet<FName> LoggedClasses;
+    FName ClassName = Widget->GetClass()->GetFName();
+    if (!LoggedClasses.Contains(ClassName))
+    {
+        LoggedClasses.Add(ClassName);
+        LogWarning(FString::Printf(TEXT("Unknown widget type processed: %s"), *ClassName.ToString()));
+    }
+}
