@@ -60,6 +60,7 @@
 #include "Containers/ScriptArray.h"
 #include "Styling/SlateTypes.h"      
 #include "UObject/UnrealType.h"  
+#include "Styling/SlateTypes.h"
 
 
 struct FWidgetRecursionSettings

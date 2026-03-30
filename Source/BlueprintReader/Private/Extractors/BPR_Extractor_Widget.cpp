@@ -95,6 +95,7 @@
 #include "Layout/Margin.h"
 #include "UObject/ObjectMacros.h"
 
+
 BPR_Extractor_Widget::BPR_Extractor_Widget()
 {
     RecursionSettings.MaxDepth = 10;
@@ -2092,7 +2093,7 @@ void BPR_Extractor_Widget::HandleSliderProperties(USlider* Slider, FString& OutT
 
     // Ориентация
     OutText += IndentStr + FString::Printf(TEXT("    - Orientation: %s\n"),
-        *UEnum::GetValueAsString(Slider->Orientation));
+        *UEnum::GetValueAsString(Slider->GetOrientation()));
 
     // Состояние
     OutText += IndentStr + FString::Printf(TEXT("    - Is Enabled: %s\n"),
@@ -2244,6 +2245,107 @@ void BPR_Extractor_Widget::HandleCheckBoxProperties(UCheckBox* CheckBox, FString
     {
         OutText += IndentStr + FString::Printf(TEXT("      - Hovered Sound: %s\n"),
             *Style.HoveredSlateSound.GetResourceObject()->GetName());
+    }
+
+    OutText += TEXT("\n");
+}
+
+void BPR_Extractor_Widget::HandleEditableTextProperties(UEditableText* EditableText, FString& OutText, int32 Indent)
+{
+    if (!EditableText)
+    {
+        return;
+    }
+
+    FString IndentStr = FString::ChrN(Indent * 2, ' ');
+
+    OutText += IndentStr + TEXT("  - EditableText Properties:\n");
+
+    // === Основной текст и Hint ===
+    FText CurrentText = EditableText->GetText();
+    OutText += IndentStr + FString::Printf(TEXT("    - Text: \"%s\"\n"), *CurrentText.ToString());
+
+    FText HintText = EditableText->GetHintText();
+    if (!HintText.IsEmpty())
+    {
+        OutText += IndentStr + FString::Printf(TEXT("    - Hint Text: \"%s\"\n"), *HintText.ToString());
+    }
+
+    // === Состояние ===
+    OutText += IndentStr + FString::Printf(TEXT("    - Is Enabled: %s\n"),
+        EditableText->GetIsEnabled() ? TEXT("True") : TEXT("False"));
+
+    OutText += IndentStr + FString::Printf(TEXT("    - Is Read Only: %s\n"),
+        EditableText->GetIsReadOnly() ? TEXT("True") : TEXT("False"));
+
+    OutText += IndentStr + FString::Printf(TEXT("    - Is Password: %s\n"),
+        EditableText->GetIsPassword() ? TEXT("True") : TEXT("False"));
+
+    // Justification
+    OutText += IndentStr + FString::Printf(TEXT("    - Justification: %s\n"),
+        *UEnum::GetValueAsString(EditableText->GetJustification()));
+
+    // Overflow Policy
+    OutText += IndentStr + FString::Printf(TEXT("    - Overflow Policy: %s\n"),
+        *UEnum::GetValueAsString(EditableText->GetTextOverflowPolicy()));
+
+    // Minimum Desired Width
+    float MinWidth = EditableText->GetMinimumDesiredWidth();
+    if (MinWidth > 0.0f)
+    {
+        OutText += IndentStr + FString::Printf(TEXT("    - Minimum Desired Width: %.1f\n"), MinWidth);
+    }
+
+    // Дополнительные поведения
+    OutText += IndentStr + FString::Printf(TEXT("    - Caret Moved When Gain Focus: %s\n"),
+        EditableText->GetIsCaretMovedWhenGainFocus() ? TEXT("True") : TEXT("False"));
+
+    OutText += IndentStr + FString::Printf(TEXT("    - Select All Text When Focused: %s\n"),
+        EditableText->GetSelectAllTextWhenFocused() ? TEXT("True") : TEXT("False"));
+
+    OutText += IndentStr + FString::Printf(TEXT("    - Revert Text On Escape: %s\n"),
+        EditableText->GetRevertTextOnEscape() ? TEXT("True") : TEXT("False"));
+
+    OutText += IndentStr + FString::Printf(TEXT("    - Clear Keyboard Focus On Commit: %s\n"),
+        EditableText->GetClearKeyboardFocusOnCommit() ? TEXT("True") : TEXT("False"));
+
+    OutText += IndentStr + FString::Printf(TEXT("    - Select All Text On Commit: %s\n"),
+        EditableText->GetSelectAllTextOnCommit() ? TEXT("True") : TEXT("False"));
+
+    // === Стиль через рефлексию (потому что GetWidgetStyle() отсутствует) ===
+    OutText += IndentStr + TEXT("    - Style:\n");
+
+    // Font (через публичный GetFont())
+    const FSlateFontInfo& FontInfo = EditableText->GetFont();
+    FString FontName = TEXT("Default");
+    if (IsValid(FontInfo.FontObject))
+    {
+        FontName = FontInfo.FontObject->GetName();
+    }
+    else if (FontInfo.TypefaceFontName != NAME_None)
+    {
+        FontName = FontInfo.TypefaceFontName.ToString();
+    }
+
+    OutText += IndentStr + FString::Printf(TEXT("      - Font: %s (Size: %d)\n"),
+        *FontName, (int32)FontInfo.Size);
+
+    // Цвет текста — тоже через рефлексию
+    static const FName ColorAndOpacityName(TEXT("ColorAndOpacity"));
+    if (FProperty* Prop = EditableText->GetClass()->FindPropertyByName(ColorAndOpacityName))
+    {
+        if (FStructProperty* StructProp = CastField<FStructProperty>(Prop))
+        {
+            if (StructProp->Struct == FSlateColor::StaticStruct())
+            {
+                FSlateColor SlateColor;
+                StructProp->CopyCompleteValue_InContainer(&SlateColor, EditableText);
+                FLinearColor LinearColor = SlateColor.GetSpecifiedColor();
+
+                OutText += IndentStr + FString::Printf(TEXT("      - Text Color: R:%.2f G:%.2f B:%.2f A:%.2f\n"),
+                    LinearColor.R, LinearColor.G, LinearColor.B, LinearColor.A);
+            }
+        }
     }
 
     OutText += TEXT("\n");
