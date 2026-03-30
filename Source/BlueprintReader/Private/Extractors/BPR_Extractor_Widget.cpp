@@ -1938,3 +1938,313 @@ void BPR_Extractor_Widget::HandleUnknownWidget(UWidget* Widget, FString& OutText
         LogWarning(FString::Printf(TEXT("Unknown widget type processed: %s"), *ClassName.ToString()));
     }
 }
+
+void BPR_Extractor_Widget::HandleRichTextBlockProperties(URichTextBlock* RichTextBlock, FString& OutText, int32 Indent)
+{
+    if (!RichTextBlock) return;
+
+    FString IndentStr = FString::ChrN(Indent * 2, ' ');
+
+    OutText += IndentStr + TEXT("  - RichTextBlock Properties:\n");
+
+    // Основной текст
+    FText BlockText = RichTextBlock->GetText();
+    OutText += IndentStr + FString::Printf(TEXT("    - Text: \"%s\"\n"), *BlockText.ToString());
+
+    // Text Style Set
+    if (UDataTable* StyleSet = RichTextBlock->GetTextStyleSet())
+    {
+        OutText += IndentStr + FString::Printf(TEXT("    - Text Style Set: %s\n"), *StyleSet->GetName());
+    }
+    else
+    {
+        OutText += IndentStr + TEXT("    - Text Style Set: None (using Default)\n");
+    }
+
+    // Default Text Style + Font (UE 5.7 compatible)
+    const FTextBlockStyle& DefaultStyle = RichTextBlock->GetCurrentDefaultTextStyle();
+
+    FString FontName = TEXT("Default");
+
+    if (IsValid(DefaultStyle.Font.FontObject))
+    {
+        FontName = DefaultStyle.Font.FontObject->GetName();
+    }
+    else if (DefaultStyle.Font.TypefaceFontName != NAME_None)
+    {
+        FontName = DefaultStyle.Font.TypefaceFontName.ToString();
+    }
+
+    OutText += IndentStr + FString::Printf(TEXT("    - Font: %s (Size: %d)\n"),
+        *FontName, (int32)DefaultStyle.Font.Size);
+
+    // Цвет текста
+    FSlateColor TextColor = DefaultStyle.ColorAndOpacity;
+    FLinearColor LinearColor = TextColor.GetSpecifiedColor();
+    OutText += IndentStr + FString::Printf(TEXT("    - Text Color: R:%.2f G:%.2f B:%.2f A:%.2f\n"),
+        LinearColor.R, LinearColor.G, LinearColor.B, LinearColor.A);
+
+    // Auto Wrap и остальное (как было раньше)
+    OutText += IndentStr + FString::Printf(TEXT("    - Auto Wrap Text: %s\n"),
+        RichTextBlock->GetAutoWrapText() ? TEXT("True") : TEXT("False"));
+
+    float WrapAt = RichTextBlock->GetWrapTextAt();
+    if (WrapAt > 0.0f)
+    {
+        OutText += IndentStr + FString::Printf(TEXT("    - Wrap Text At: %.0f\n"), WrapAt);
+    }
+
+        // === Декораторы, политики и скрытые свойства через рефлексию (UE 5.7) ===
+    
+    // Decorator Classes Count (через FScriptArrayHelper — работает в UE 5.7)
+    static const FName DecoratorClassesName(TEXT("DecoratorClasses"));
+    if (FProperty* Prop = RichTextBlock->GetClass()->FindPropertyByName(DecoratorClassesName))
+    {
+        if (FArrayProperty* ArrayProp = CastField<FArrayProperty>(Prop))
+        {
+            // Получаем адрес массива внутри объекта
+            void* ArrayAddress = ArrayProp->ContainerPtrToValuePtr<void>(RichTextBlock);
+            
+            // Создаём helper и получаем количество элементов
+            FScriptArrayHelper ArrayHelper(ArrayProp, ArrayAddress);
+            int32 Count = ArrayHelper.Num();
+
+            OutText += IndentStr + FString::Printf(TEXT("    - Decorator Classes Count: %d\n"), Count);
+        }
+        else
+        {
+            OutText += IndentStr + TEXT("    - Decorator Classes Count: (not array)\n");
+        }
+    }
+    else
+    {
+        OutText += IndentStr + TEXT("    - Decorator Classes Count: Unknown (property not found)\n");
+    }
+
+    // Min Desired Width
+    static const FName MinDesiredWidthName(TEXT("MinDesiredWidth"));
+    if (FProperty* Prop = RichTextBlock->GetClass()->FindPropertyByName(MinDesiredWidthName))
+    {
+        if (FFloatProperty* FloatProp = CastField<FFloatProperty>(Prop))
+        {
+            float Value = FloatProp->GetPropertyValue_InContainer(RichTextBlock);
+            OutText += IndentStr + FString::Printf(TEXT("    - Min Desired Width: %.1f\n"), Value);
+        }
+    }
+
+    // Text Transform Policy
+    static const FName TransformPolicyName(TEXT("TextTransformPolicy"));
+    if (FProperty* Prop = RichTextBlock->GetClass()->FindPropertyByName(TransformPolicyName))
+    {
+        if (FEnumProperty* EnumProp = CastField<FEnumProperty>(Prop))
+        {
+            uint8 RawValue = 0;
+            EnumProp->GetValue_InContainer(RichTextBlock, &RawValue);
+            FString PolicyStr = EnumProp->GetEnum()->GetNameStringByValue(RawValue);
+            OutText += IndentStr + FString::Printf(TEXT("    - Text Transform Policy: %s\n"), *PolicyStr);
+        }
+    }
+
+    // Text Overflow Policy
+    static const FName OverflowPolicyName(TEXT("TextOverflowPolicy"));
+    if (FProperty* Prop = RichTextBlock->GetClass()->FindPropertyByName(OverflowPolicyName))
+    {
+        if (FEnumProperty* EnumProp = CastField<FEnumProperty>(Prop))
+        {
+            uint8 RawValue = 0;
+            EnumProp->GetValue_InContainer(RichTextBlock, &RawValue);
+            FString PolicyStr = EnumProp->GetEnum()->GetNameStringByValue(RawValue);
+            OutText += IndentStr + FString::Printf(TEXT("    - Text Overflow Policy: %s\n"), *PolicyStr);
+        }
+    }
+
+    // Override Default Style (bool)
+    static const FName OverrideDefaultStyleName(TEXT("bOverrideDefaultStyle"));
+    if (FProperty* Prop = RichTextBlock->GetClass()->FindPropertyByName(OverrideDefaultStyleName))
+    {
+        if (FBoolProperty* BoolProp = CastField<FBoolProperty>(Prop))
+        {
+            bool bOverride = BoolProp->GetPropertyValue_InContainer(RichTextBlock);
+            OutText += IndentStr + FString::Printf(TEXT("    - Override Default Style: %s\n"),
+                bOverride ? TEXT("True") : TEXT("False"));
+        }
+    }
+
+    OutText += TEXT("\n");
+}
+
+void BPR_Extractor_Widget::HandleSliderProperties(USlider* Slider, FString& OutText, int32 Indent)
+{
+    if (!Slider)
+    {
+        return;
+    }
+
+    FString IndentStr = FString::ChrN(Indent * 2, ' ');
+
+    OutText += IndentStr + TEXT("  - Slider Properties:\n");
+
+    // === Основные значения ===
+    OutText += IndentStr + FString::Printf(TEXT("    - Current Value: %.3f\n"), Slider->GetValue());
+    OutText += IndentStr + FString::Printf(TEXT("    - Min Value: %.3f\n"), Slider->GetMinValue());
+    OutText += IndentStr + FString::Printf(TEXT("    - Max Value: %.3f\n"), Slider->GetMaxValue());
+    OutText += IndentStr + FString::Printf(TEXT("    - Step Size: %.4f\n"), Slider->GetStepSize());
+
+    // Ориентация
+    OutText += IndentStr + FString::Printf(TEXT("    - Orientation: %s\n"),
+        *UEnum::GetValueAsString(Slider->Orientation));
+
+    // Состояние
+    OutText += IndentStr + FString::Printf(TEXT("    - Is Enabled: %s\n"),
+        Slider->GetIsEnabled() ? TEXT("True") : TEXT("False"));
+
+    OutText += IndentStr + FString::Printf(TEXT("    - Is Locked: %s\n"),
+        Slider->IsLocked() ? TEXT("True") : TEXT("False"));
+
+    // === Стиль (актуальный для UE 5.7) ===
+    const FSliderStyle& Style = Slider->GetWidgetStyle();
+
+    OutText += IndentStr + TEXT("    - Style:\n");
+    OutText += IndentStr + FString::Printf(TEXT("      - Bar Thickness: %.2f\n"), Style.BarThickness);
+
+    // Bar (Normal)
+    if (Style.NormalBarImage.GetResourceObject())
+    {
+        OutText += IndentStr + FString::Printf(TEXT("      - Normal Bar Image: %s\n"),
+            *Style.NormalBarImage.GetResourceObject()->GetName());
+    }
+    else
+    {
+        OutText += IndentStr + TEXT("      - Normal Bar Image: None\n");
+    }
+
+    // Thumb (Normal)
+    if (Style.NormalThumbImage.GetResourceObject())
+    {
+        OutText += IndentStr + FString::Printf(TEXT("      - Normal Thumb Image: %s\n"),
+            *Style.NormalThumbImage.GetResourceObject()->GetName());
+    }
+    else
+    {
+        OutText += IndentStr + TEXT("      - Normal Thumb Image: None\n");
+    }
+
+    // Дополнительно (Hovered / Disabled) — выводим только если они отличаются от Normal
+    if (Style.HoveredBarImage.GetResourceObject() && 
+        Style.HoveredBarImage.GetResourceObject() != Style.NormalBarImage.GetResourceObject())
+    {
+        OutText += IndentStr + FString::Printf(TEXT("      - Hovered Bar Image: %s\n"),
+            *Style.HoveredBarImage.GetResourceObject()->GetName());
+    }
+
+    if (Style.HoveredThumbImage.GetResourceObject() && 
+        Style.HoveredThumbImage.GetResourceObject() != Style.NormalThumbImage.GetResourceObject())
+    {
+        OutText += IndentStr + FString::Printf(TEXT("      - Hovered Thumb Image: %s\n"),
+            *Style.HoveredThumbImage.GetResourceObject()->GetName());
+    }
+
+    OutText += TEXT("\n");
+}
+
+void BPR_Extractor_Widget::HandleCheckBoxProperties(UCheckBox* CheckBox, FString& OutText, int32 Indent)
+{
+    if (!CheckBox)
+    {
+        return;
+    }
+
+    FString IndentStr = FString::ChrN(Indent * 2, ' ');
+
+    OutText += IndentStr + TEXT("  - CheckBox Properties:\n");
+
+    // === Текущее состояние ===
+    ECheckBoxState CurrentState = CheckBox->GetCheckedState();
+    OutText += IndentStr + FString::Printf(TEXT("    - Current State: %s\n"),
+        *UEnum::GetValueAsString(CurrentState));
+
+    OutText += IndentStr + FString::Printf(TEXT("    - Is Enabled: %s\n"),
+        CheckBox->GetIsEnabled() ? TEXT("True") : TEXT("False"));
+
+    // === Тип чекбокса (из стиля) ===
+    const FCheckBoxStyle& Style = CheckBox->GetWidgetStyle();
+
+    FString CheckBoxTypeStr = TEXT("Unknown");
+    switch (Style.CheckBoxType.GetValue())   // TEnumAsByte → .GetValue()
+    {
+        case ESlateCheckBoxType::CheckBox:
+            CheckBoxTypeStr = TEXT("CheckBox");
+            break;
+        case ESlateCheckBoxType::ToggleButton:
+            CheckBoxTypeStr = TEXT("ToggleButton");
+            break;
+    }
+
+    OutText += IndentStr + FString::Printf(TEXT("    - CheckBox Type: %s\n"), *CheckBoxTypeStr);
+
+    // === Padding (берём из стиля, как в OverlaySlot) ===
+    const FMargin& Padding = Style.Padding;
+    if (Padding.Left != 0.0f || Padding.Top != 0.0f || Padding.Right != 0.0f || Padding.Bottom != 0.0f)
+    {
+        OutText += IndentStr + FString::Printf(TEXT("    - Padding: L:%.0f T:%.0f R:%.0f B:%.0f\n"),
+            Padding.Left, Padding.Top, Padding.Right, Padding.Bottom);
+    }
+
+    // === Стиль ===
+    OutText += IndentStr + TEXT("    - Style:\n");
+
+    // Background
+    if (Style.BackgroundImage.GetResourceObject())
+    {
+        OutText += IndentStr + FString::Printf(TEXT("      - Background Image: %s\n"),
+            *Style.BackgroundImage.GetResourceObject()->GetName());
+    }
+
+    // Unchecked
+    if (Style.UncheckedImage.GetResourceObject())
+    {
+        OutText += IndentStr + FString::Printf(TEXT("      - Unchecked Image: %s\n"),
+            *Style.UncheckedImage.GetResourceObject()->GetName());
+    }
+
+    // Checked
+    if (Style.CheckedImage.GetResourceObject())
+    {
+        OutText += IndentStr + FString::Printf(TEXT("      - Checked Image: %s\n"),
+            *Style.CheckedImage.GetResourceObject()->GetName());
+    }
+
+    // Undetermined
+    if (Style.UndeterminedImage.GetResourceObject())
+    {
+        OutText += IndentStr + FString::Printf(TEXT("      - Undetermined Image: %s\n"),
+            *Style.UndeterminedImage.GetResourceObject()->GetName());
+    }
+
+    // Foreground Color
+    FLinearColor Foreground = Style.ForegroundColor.GetSpecifiedColor();
+    if (!Foreground.Equals(FLinearColor::White, 0.01f))
+    {
+        OutText += IndentStr + FString::Printf(TEXT("      - Foreground Color: R:%.2f G:%.2f B:%.2f A:%.2f\n"),
+            Foreground.R, Foreground.G, Foreground.B, Foreground.A);
+    }
+
+    // Звуки
+    if (Style.CheckedSlateSound.GetResourceObject())
+    {
+        OutText += IndentStr + FString::Printf(TEXT("      - Checked Sound: %s\n"),
+            *Style.CheckedSlateSound.GetResourceObject()->GetName());
+    }
+    if (Style.UncheckedSlateSound.GetResourceObject())
+    {
+        OutText += IndentStr + FString::Printf(TEXT("      - Unchecked Sound: %s\n"),
+            *Style.UncheckedSlateSound.GetResourceObject()->GetName());
+    }
+    if (Style.HoveredSlateSound.GetResourceObject())
+    {
+        OutText += IndentStr + FString::Printf(TEXT("      - Hovered Sound: %s\n"),
+            *Style.HoveredSlateSound.GetResourceObject()->GetName());
+    }
+
+    OutText += TEXT("\n");
+}

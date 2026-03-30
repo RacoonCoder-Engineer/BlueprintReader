@@ -6,8 +6,6 @@
 
 #include "CoreMinimal.h"
 #include "Core/BPR_Core.h"
-
-// Новые инклюды для виджетов
 #include "Blueprint/UserWidget.h"
 #include "WidgetBlueprint.h"
 #include "Components/Widget.h"
@@ -36,6 +34,33 @@
 #include "Styling/SlateTypes.h"
 #include "Layout/Margin.h"
 #include "UObject/ObjectMacros.h"
+#include "Components/RichTextBlock.h"
+#include "Components/Slider.h"
+#include "Components/CheckBox.h"
+#include "Components/EditableText.h"
+#include "Components/EditableTextBox.h"
+#include "Components/SpinBox.h"
+#include "Components/ComboBoxString.h"
+#include "Components/CanvasPanel.h"
+#include "Components/Overlay.h"
+#include "Components/HorizontalBox.h"
+#include "Components/VerticalBox.h"
+#include "Components/ScrollBox.h"
+#include "Components/SizeBox.h"
+#include "Components/GridPanel.h"
+#include "Components/ListView.h"
+#include "Components/TileView.h"
+#include "Components/TreeView.h"
+#include "Components/Throbber.h"
+#include "Components/CircularThrobber.h"
+#include "Components/ExpandableArea.h"
+#include "Components/BackgroundBlur.h"
+#include "Components/RichTextBlockDecorator.h"
+#include "Components/RichTextBlockImageDecorator.h"
+#include "Containers/ScriptArray.h"
+#include "Styling/SlateTypes.h"      
+#include "UObject/UnrealType.h"  
+
 
 struct FWidgetRecursionSettings
 {
@@ -165,18 +190,48 @@ private:
     /** Добавляет специфические свойства в зависимости от типа виджета */
     void AppendWidgetTypeProperties(UWidget* Widget, FString& OutText, int32 Indent);
     
-    // Handlers
-    
-    /** Обрабатывает специфические свойства UTextBlock */
+    //==================================================================
+    // Widget Property Handlers
+    //==================================================================
+
+
+    /** ====================== Common Widgets ====================== */
     void HandleTextBlockProperties(UTextBlock* TextBlock, FString& OutText, int32 Indent);
-    /** Обрабатывает специфические свойства UImage */
+    void HandleRichTextBlockProperties(URichTextBlock* RichTextBlock, FString& OutText, int32 Indent);
     void HandleImageProperties(UImage* Image, FString& OutText, int32 Indent);
-    /** Обрабатывает специфические свойства UButton */
     void HandleButtonProperties(UButton* Button, FString& OutText, int32 Indent);
-    /** Обрабатывает специфические свойства UBorder */
     void HandleBorderProperties(UBorder* Border, FString& OutText, int32 Indent);
-    /** Обрабатывает специфические свойства UProgressBar */
     void HandleProgressBarProperties(UProgressBar* ProgressBar, FString& OutText, int32 Indent);
+    void HandleSliderProperties(USlider* Slider, FString& OutText, int32 Indent);
+    void HandleCheckBoxProperties(UCheckBox* CheckBox, FString& OutText, int32 Indent);
+
+    /** ====================== Input Widgets ====================== */
+    void HandleEditableTextProperties(UEditableText* EditableText, FString& OutText, int32 Indent);
+    void HandleEditableTextBoxProperties(UEditableTextBox* EditableTextBox, FString& OutText, int32 Indent);
+    void HandleSpinBoxProperties(USpinBox* SpinBox, FString& OutText, int32 Indent);
+    void HandleComboBoxStringProperties(UComboBoxString* ComboBoxString, FString& OutText, int32 Indent);
+
+    /** ====================== Panel & Layout Widgets ====================== */
+    void HandleCanvasPanelProperties(UCanvasPanel* CanvasPanel, FString& OutText, int32 Indent);
+    void HandleOverlayProperties(UOverlay* Overlay, FString& OutText, int32 Indent);
+    void HandleHorizontalBoxProperties(UHorizontalBox* HorizontalBox, FString& OutText, int32 Indent);
+    void HandleVerticalBoxProperties(UVerticalBox* VerticalBox, FString& OutText, int32 Indent);
+    void HandleScrollBoxProperties(UScrollBox* ScrollBox, FString& OutText, int32 Indent);
+    void HandleSizeBoxProperties(USizeBox* SizeBox, FString& OutText, int32 Indent);
+    void HandleGridPanelProperties(UGridPanel* GridPanel, FString& OutText, int32 Indent);
+
+    /** ====================== List & View Widgets ====================== */
+    void HandleListViewProperties(UListView* ListView, FString& OutText, int32 Indent);
+    void HandleTileViewProperties(UTileView* TileView, FString& OutText, int32 Indent);
+    void HandleTreeViewProperties(UTreeView* TreeView, FString& OutText, int32 Indent);
+
+    /** ====================== Special & Misc ====================== */
+    void HandleThrobberProperties(UThrobber* Throbber, FString& OutText, int32 Indent);
+    void HandleCircularThrobberProperties(UCircularThrobber* CircularThrobber, FString& OutText, int32 Indent);
+    void HandleExpandableAreaProperties(UExpandableArea* ExpandableArea, FString& OutText, int32 Indent);
+    void HandleBackgroundBlurProperties(UBackgroundBlur* BackgroundBlur, FString& OutText, int32 Indent);
+
+    /** ====================== Fallback ====================== */
     /** Обработка неизвестных или кастомных виджетов (fallback) */
     void HandleUnknownWidget(UWidget* Widget, FString& OutText, int32 Indent);
     
