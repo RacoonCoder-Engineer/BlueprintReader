@@ -2590,3 +2590,52 @@ void BPR_Extractor_Widget::HandleComboBoxStringProperties(UComboBoxString* Combo
 
     OutText += TEXT("\n");
 }
+
+void BPR_Extractor_Widget::HandleCanvasPanelProperties(UCanvasPanel* CanvasPanel, FString& OutText, int32 Indent)
+{
+    if (!CanvasPanel)
+    {
+        return;
+    }
+
+    FString IndentStr = FString::ChrN(Indent * 2, ' ');
+
+    OutText += IndentStr + TEXT("  - CanvasPanel Properties:\n");
+
+    // Базовые свойства
+    OutText += IndentStr + FString::Printf(TEXT("    - Is Enabled: %s\n"),
+        CanvasPanel->GetIsEnabled() ? TEXT("True") : TEXT("False"));
+
+    // Количество детей — самое полезное для Canvas
+    int32 ChildCount = CanvasPanel->GetChildrenCount();
+    OutText += IndentStr + FString::Printf(TEXT("    - Child Count: %d\n"), ChildCount);
+
+    // Clipping (самое близкое к старому bClipChildren)
+    EWidgetClipping ClippingMode = CanvasPanel->GetClipping();
+    FString ClippingStr = UEnum::GetValueAsString(ClippingMode);
+    // Убираем префикс "EWidgetClipping::" для красоты
+    ClippingStr.RemoveFromStart(TEXT("EWidgetClipping::"));
+
+    OutText += IndentStr + FString::Printf(TEXT("    - Clipping Mode: %s\n"), *ClippingStr);
+
+    // Дополнительная информация о нативном Slate-виджете
+    TSharedPtr<SConstraintCanvas> CanvasWidget = CanvasPanel->GetCanvasWidget();
+    if (CanvasWidget.IsValid())
+    {
+        float Opacity = CanvasWidget->GetRenderOpacity();
+        if (Opacity < 1.0f - KINDA_SMALL_NUMBER)
+        {
+            OutText += IndentStr + FString::Printf(TEXT("    - Render Opacity: %.2f\n"), Opacity);
+        }
+    }
+    else
+    {
+        OutText += IndentStr + TEXT("    - Native Canvas Widget: Not yet constructed\n");
+    }
+
+    // Общая характеристика
+    OutText += IndentStr + TEXT("    - Layout Type: Absolute Positioning (Anchors + Offsets)\n");
+    OutText += IndentStr + TEXT("    - Supports ZOrder: Yes\n");
+
+    OutText += TEXT("\n");
+}
