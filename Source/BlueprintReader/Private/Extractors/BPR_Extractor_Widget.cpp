@@ -3353,3 +3353,59 @@ void BPR_Extractor_Widget::HandleThrobberProperties(UThrobber* Throbber, FString
 
     OutText += TEXT("\n");
 }
+
+void BPR_Extractor_Widget::HandleCircularThrobberProperties(UCircularThrobber* CircularThrobber, FString& OutText, int32 Indent)
+{
+    if (!CircularThrobber)
+    {
+        return;
+    }
+
+    FString IndentStr = FString::ChrN(Indent * 2, ' ');
+
+    OutText += IndentStr + TEXT("  - CircularThrobber Properties:\n");
+
+    // Основные свойства
+    OutText += IndentStr + FString::Printf(TEXT("    - Is Enabled: %s\n"),
+        CircularThrobber->GetIsEnabled() ? TEXT("True") : TEXT("False"));
+
+    // Основные параметры
+    OutText += IndentStr + FString::Printf(TEXT("    - Number of Pieces: %d\n"), 
+        CircularThrobber->GetNumberOfPieces());
+
+    OutText += IndentStr + FString::Printf(TEXT("    - Period: %.2f sec (full rotation)\n"), 
+        CircularThrobber->GetPeriod());
+
+    OutText += IndentStr + FString::Printf(TEXT("    - Radius: %.1f\n"), 
+        CircularThrobber->GetRadius());
+
+    // Изображение
+    const FSlateBrush& Brush = CircularThrobber->GetImage();
+    if (Brush.GetResourceObject())
+    {
+        OutText += IndentStr + FString::Printf(TEXT("    - Image Brush: %s\n"), 
+            *Brush.GetResourceObject()->GetName());
+    }
+    else
+    {
+        OutText += IndentStr + TEXT("    - Image Brush: Default\n");
+    }
+
+    // Clipping
+    EWidgetClipping ClippingMode = CircularThrobber->GetClipping();
+    FString ClippingStr = UEnum::GetValueAsString(ClippingMode);
+    ClippingStr.RemoveFromStart(TEXT("EWidgetClipping::"));
+    OutText += IndentStr + FString::Printf(TEXT("    - Clipping Mode: %s\n"), *ClippingStr);
+
+    // Render Opacity
+    float Opacity = CircularThrobber->GetRenderOpacity();
+    if (Opacity < 1.0f - KINDA_SMALL_NUMBER)
+    {
+        OutText += IndentStr + FString::Printf(TEXT("    - Render Opacity: %.2f\n"), Opacity);
+    }
+
+    OutText += IndentStr + TEXT("    - Type: Circular Throbber (smooth spinning loader)\n");
+    OutText += IndentStr + TEXT("    - Modern alternative to classic Throbber\n");
+
+    OutText += TEXT("\n");
+}
