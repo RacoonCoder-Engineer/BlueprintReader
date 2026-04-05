@@ -2946,3 +2946,53 @@ void BPR_Extractor_Widget::HandleSizeBoxProperties(USizeBox* SizeBox, FString& O
 
     OutText += TEXT("\n");
 }
+
+void BPR_Extractor_Widget::HandleGridPanelProperties(UGridPanel* GridPanel, FString& OutText, int32 Indent)
+{
+    if (!GridPanel)
+    {
+        return;
+    }
+
+    FString IndentStr = FString::ChrN(Indent * 2, ' ');
+
+    OutText += IndentStr + TEXT("  - GridPanel Properties:\n");
+
+    OutText += IndentStr + FString::Printf(TEXT("    - Is Enabled: %s\n"),
+        GridPanel->GetIsEnabled() ? TEXT("True") : TEXT("False"));
+
+    int32 ChildCount = GridPanel->GetChildrenCount();
+    OutText += IndentStr + FString::Printf(TEXT("    - Child Count: %d\n"), ChildCount);
+
+    // Fill Rules
+    OutText += IndentStr + FString::Printf(TEXT("    - Column Fill Rules Count: %d\n"), GridPanel->ColumnFill.Num());
+    OutText += IndentStr + FString::Printf(TEXT("    - Row Fill Rules Count: %d\n"), GridPanel->RowFill.Num());
+
+    if (GridPanel->ColumnFill.Num() > 0)
+    {
+        OutText += IndentStr + TEXT("    - Column Fill: ");
+        for (int32 i = 0; i < FMath::Min(8, GridPanel->ColumnFill.Num()); ++i)
+        {
+            OutText += FString::Printf(TEXT("%.2f "), GridPanel->ColumnFill[i]);
+        }
+        if (GridPanel->ColumnFill.Num() > 8)
+            OutText += TEXT("...");
+        OutText += TEXT("\n");
+    }
+
+    // Clipping и Opacity
+    EWidgetClipping ClippingMode = GridPanel->GetClipping();
+    FString ClippingStr = UEnum::GetValueAsString(ClippingMode);
+    ClippingStr.RemoveFromStart(TEXT("EWidgetClipping::"));
+    OutText += IndentStr + FString::Printf(TEXT("    - Clipping Mode: %s\n"), *ClippingStr);
+
+    float Opacity = GridPanel->GetRenderOpacity();
+    if (Opacity < 1.0f - KINDA_SMALL_NUMBER)
+    {
+        OutText += IndentStr + FString::Printf(TEXT("    - Render Opacity: %.2f\n"), Opacity);
+    }
+
+    OutText += IndentStr + TEXT("    - Layout: Grid (uses UGridSlot for positioning)\n");
+
+    OutText += TEXT("\n");
+}
