@@ -2872,3 +2872,77 @@ void BPR_Extractor_Widget::HandleScrollBoxProperties(UScrollBox* ScrollBox, FStr
 
     OutText += TEXT("\n");
 }
+
+void BPR_Extractor_Widget::HandleSizeBoxProperties(USizeBox* SizeBox, FString& OutText, int32 Indent)
+{
+    if (!SizeBox)
+    {
+        return;
+    }
+
+    FString IndentStr = FString::ChrN(Indent * 2, ' ');
+
+    OutText += IndentStr + TEXT("  - SizeBox Properties:\n");
+
+    // Основные флаги
+    OutText += IndentStr + FString::Printf(TEXT("    - Is Enabled: %s\n"),
+        SizeBox->GetIsEnabled() ? TEXT("True") : TEXT("False"));
+
+    // Размеры — самое важное в SizeBox
+    OutText += IndentStr + FString::Printf(TEXT("    - Width Override: %.1f\n"), 
+        SizeBox->GetWidthOverride());
+
+    OutText += IndentStr + FString::Printf(TEXT("    - Height Override: %.1f\n"), 
+        SizeBox->GetHeightOverride());
+
+    // Минимальные размеры
+    OutText += IndentStr + FString::Printf(TEXT("    - Min Desired Width: %.1f\n"), 
+        SizeBox->GetMinDesiredWidth());
+
+    OutText += IndentStr + FString::Printf(TEXT("    - Min Desired Height: %.1f\n"), 
+        SizeBox->GetMinDesiredHeight());
+
+    // Максимальные размеры
+    OutText += IndentStr + FString::Printf(TEXT("    - Max Desired Width: %.1f\n"), 
+        SizeBox->GetMaxDesiredWidth());
+
+    OutText += IndentStr + FString::Printf(TEXT("    - Max Desired Height: %.1f\n"), 
+        SizeBox->GetMaxDesiredHeight());
+
+    // Флаги управления размерами
+    OutText += IndentStr + FString::Printf(TEXT("    - bOverride_WidthOverride: %s\n"),
+        SizeBox->bOverride_WidthOverride ? TEXT("True") : TEXT("False"));
+
+    OutText += IndentStr + FString::Printf(TEXT("    - bOverride_HeightOverride: %s\n"),
+        SizeBox->bOverride_HeightOverride ? TEXT("True") : TEXT("False"));
+
+    OutText += IndentStr + FString::Printf(TEXT("    - bOverride_MinDesiredWidth: %s\n"),
+        SizeBox->bOverride_MinDesiredWidth ? TEXT("True") : TEXT("False"));
+
+    OutText += IndentStr + FString::Printf(TEXT("    - bOverride_MinDesiredHeight: %s\n"),
+        SizeBox->bOverride_MinDesiredHeight ? TEXT("True") : TEXT("False"));
+
+    OutText += IndentStr + FString::Printf(TEXT("    - bOverride_MaxDesiredWidth: %s\n"),
+        SizeBox->bOverride_MaxDesiredWidth ? TEXT("True") : TEXT("False"));
+
+    OutText += IndentStr + FString::Printf(TEXT("    - bOverride_MaxDesiredHeight: %s\n"),
+        SizeBox->bOverride_MaxDesiredHeight ? TEXT("True") : TEXT("False"));
+
+    // Clipping и opacity
+    EWidgetClipping ClippingMode = SizeBox->GetClipping();
+    FString ClippingStr = UEnum::GetValueAsString(ClippingMode);
+    ClippingStr.RemoveFromStart(TEXT("EWidgetClipping::"));
+    OutText += IndentStr + FString::Printf(TEXT("    - Clipping Mode: %s\n"), *ClippingStr);
+
+    float Opacity = SizeBox->GetRenderOpacity();
+    if (Opacity < 1.0f - KINDA_SMALL_NUMBER)
+    {
+        OutText += IndentStr + FString::Printf(TEXT("    - Render Opacity: %.2f\n"), Opacity);
+    }
+
+    // Описание поведения
+    OutText += IndentStr + TEXT("    - Layout Type: Size Control Wrapper\n");
+    OutText += IndentStr + TEXT("    - Purpose: Forces exact size or constrains child widget size\n");
+
+    OutText += TEXT("\n");
+}
