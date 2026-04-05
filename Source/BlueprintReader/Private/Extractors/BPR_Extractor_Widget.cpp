@@ -3151,3 +3151,160 @@ void BPR_Extractor_Widget::HandleListViewProperties(UListView* ListView, FString
 
     OutText += TEXT("\n");
 }
+
+void BPR_Extractor_Widget::HandleTileViewProperties(UTileView* TileView, FString& OutText, int32 Indent)
+{
+    if (!TileView)
+    {
+        return;
+    }
+
+    FString IndentStr = FString::ChrN(Indent * 2, ' ');
+
+    OutText += IndentStr + TEXT("  - TileView Properties:\n");
+
+    // Основные свойства
+    OutText += IndentStr + FString::Printf(TEXT("    - Is Enabled: %s\n"),
+        TileView->GetIsEnabled() ? TEXT("True") : TEXT("False"));
+
+    int32 ItemCount = TileView->GetNumItems();
+    OutText += IndentStr + FString::Printf(TEXT("    - Total Items: %d\n"), ItemCount);
+
+    // Ориентация
+    EOrientation Orientation = TileView->GetOrientation();
+    OutText += IndentStr + FString::Printf(TEXT("    - Orientation: %s\n"),
+        *UEnum::GetValueAsString(Orientation));
+
+    // Режим выбора
+    ESelectionMode::Type SelectionMode = TileView->GetSelectionMode();
+    OutText += IndentStr + FString::Printf(TEXT("    - Selection Mode: %s\n"),
+        *UEnum::GetValueAsString(SelectionMode));
+
+    // Размеры тайлов
+    OutText += IndentStr + FString::Printf(TEXT("    - Entry Height: %.1f\n"), TileView->GetEntryHeight());
+    OutText += IndentStr + FString::Printf(TEXT("    - Entry Width: %.1f\n"), TileView->GetEntryWidth());
+
+    // Пробелы между тайлами
+    OutText += IndentStr + FString::Printf(TEXT("    - Horizontal Entry Spacing: %.1f\n"),
+        TileView->GetHorizontalEntrySpacing());
+
+    OutText += IndentStr + FString::Printf(TEXT("    - Vertical Entry Spacing: %.1f\n"),
+        TileView->GetVerticalEntrySpacing());
+
+    // Скроллбар
+    FMargin ScrollBarPadding = TileView->GetScrollBarPadding();
+    OutText += IndentStr + FString::Printf(TEXT("    - ScrollBar Padding: L:%.1f T:%.1f R:%.1f B:%.1f\n"),
+        ScrollBarPadding.Left, ScrollBarPadding.Top, ScrollBarPadding.Right, ScrollBarPadding.Bottom);
+
+    // Clipping
+    EWidgetClipping ClippingMode = TileView->GetClipping();
+    FString ClippingStr = UEnum::GetValueAsString(ClippingMode);
+    ClippingStr.RemoveFromStart(TEXT("EWidgetClipping::"));
+    OutText += IndentStr + FString::Printf(TEXT("    - Clipping Mode: %s\n"), *ClippingStr);
+
+    // Render Opacity
+    float Opacity = TileView->GetRenderOpacity();
+    if (Opacity < 1.0f - KINDA_SMALL_NUMBER)
+    {
+        OutText += IndentStr + FString::Printf(TEXT("    - Render Opacity: %.2f\n"), Opacity);
+    }
+
+    // Описание
+    OutText += IndentStr + TEXT("    - Type: Tile View (virtualized grid of tiles)\n");
+    OutText += IndentStr + TEXT("    - Arranges items in a grid with fixed entry size\n");
+
+    if (ItemCount > 0)
+    {
+        OutText += IndentStr + FString::Printf(TEXT("    - Currently contains %d items\n"), ItemCount);
+    }
+
+    OutText += TEXT("\n");
+}
+
+void BPR_Extractor_Widget::HandleTreeViewProperties(UTreeView* TreeView, FString& OutText, int32 Indent)
+{
+    if (!TreeView)
+    {
+        return;
+    }
+
+    FString IndentStr = FString::ChrN(Indent * 2, ' ');
+
+    OutText += IndentStr + TEXT("  - TreeView Properties:\n");
+
+    // Основные свойства
+    OutText += IndentStr + FString::Printf(TEXT("    - Is Enabled: %s\n"),
+        TreeView->GetIsEnabled() ? TEXT("True") : TEXT("False"));
+
+    int32 ItemCount = TreeView->GetNumItems();
+    OutText += IndentStr + FString::Printf(TEXT("    - Total Items: %d\n"), ItemCount);
+
+    // Режим выбора
+    ESelectionMode::Type SelectionMode = TreeView->GetSelectionMode();
+    OutText += IndentStr + FString::Printf(TEXT("    - Selection Mode: %s\n"),
+        *UEnum::GetValueAsString(SelectionMode));
+
+    OutText += IndentStr + FString::Printf(TEXT("    - Is Multi-Select: %s\n"),
+        (SelectionMode == ESelectionMode::Multi) ? TEXT("True") : TEXT("False"));
+
+    // Поведение дерева (доступ через рефлексию)
+    OutText += IndentStr + TEXT("    - Behavior Flags:\n");
+
+    auto AppendBoolFlag = [&](const FName& PropName, const FString& DisplayName)
+    {
+        if (FBoolProperty* BoolProp = FindFProperty<FBoolProperty>(TreeView->GetClass(), PropName))
+        {
+            bool Value = BoolProp->GetPropertyValue_InContainer(TreeView);
+            OutText += IndentStr + FString::Printf(TEXT("      - %s: %s\n"), 
+                *DisplayName, Value ? TEXT("True") : TEXT("False"));
+        }
+        else
+        {
+            OutText += IndentStr + FString::Printf(TEXT("      - %s: (not accessible)\n"), *DisplayName);
+        }
+    };
+
+    AppendBoolFlag("bClearSelectionOnClick", "Clear Selection On Click");
+
+    // Отступы и размеры
+    OutText += IndentStr + FString::Printf(TEXT("    - Horizontal Entry Spacing: %.1f\n"),
+        TreeView->GetHorizontalEntrySpacing());
+
+    OutText += IndentStr + FString::Printf(TEXT("    - Vertical Entry Spacing: %.1f\n"),
+        TreeView->GetVerticalEntrySpacing());
+
+    // Скроллбар
+    FMargin ScrollBarPadding = TreeView->GetScrollBarPadding();
+    OutText += IndentStr + FString::Printf(TEXT("    - ScrollBar Padding: L:%.1f T:%.1f R:%.1f B:%.1f\n"),
+        ScrollBarPadding.Left, ScrollBarPadding.Top, ScrollBarPadding.Right, ScrollBarPadding.Bottom);
+
+    // Clipping
+    EWidgetClipping ClippingMode = TreeView->GetClipping();
+    FString ClippingStr = UEnum::GetValueAsString(ClippingMode);
+    ClippingStr.RemoveFromStart(TEXT("EWidgetClipping::"));
+    OutText += IndentStr + FString::Printf(TEXT("    - Clipping Mode: %s\n"), *ClippingStr);
+
+    // Render Opacity
+    float Opacity = TreeView->GetRenderOpacity();
+    if (Opacity < 1.0f - KINDA_SMALL_NUMBER)
+    {
+        OutText += IndentStr + FString::Printf(TEXT("    - Render Opacity: %.2f\n"), Opacity);
+    }
+
+    // Описание
+    OutText += IndentStr + TEXT("    - Type: Tree View (hierarchical virtualized list)\n");
+    OutText += IndentStr + TEXT("    - Supports expandable/collapsible items with children\n");
+    OutText += IndentStr + TEXT("    - Uses UUserWidget as entry (must implement IUserObjectListEntry)\n");
+
+    if (ItemCount > 0)
+    {
+        OutText += IndentStr + FString::Printf(TEXT("    - Currently has %d root items\n"), ItemCount);
+    }
+    else
+    {
+        OutText += IndentStr + TEXT("    - Tree is empty\n");
+    }
+
+    OutText += TEXT("\n");
+}
+
