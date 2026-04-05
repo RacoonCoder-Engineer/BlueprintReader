@@ -2639,3 +2639,50 @@ void BPR_Extractor_Widget::HandleCanvasPanelProperties(UCanvasPanel* CanvasPanel
 
     OutText += TEXT("\n");
 }
+
+void BPR_Extractor_Widget::HandleOverlayProperties(UOverlay* Overlay, FString& OutText, int32 Indent)
+{
+    if (!Overlay)
+    {
+        return;
+    }
+
+    FString IndentStr = FString::ChrN(Indent * 2, ' ');
+
+    OutText += IndentStr + TEXT("  - Overlay Properties:\n");
+
+    // Основные свойства
+    OutText += IndentStr + FString::Printf(TEXT("    - Is Enabled: %s\n"),
+        Overlay->GetIsEnabled() ? TEXT("True") : TEXT("False"));
+
+    // Количество детей (очень важно для Overlay)
+    int32 ChildCount = Overlay->GetChildrenCount();
+    OutText += IndentStr + FString::Printf(TEXT("    - Child Count: %d\n"), ChildCount);
+
+    // Clipping (Overlay часто используется как слой, поэтому clipping важен)
+    EWidgetClipping ClippingMode = Overlay->GetClipping();
+    FString ClippingStr = UEnum::GetValueAsString(ClippingMode);
+    ClippingStr.RemoveFromStart(TEXT("EWidgetClipping::"));
+
+    OutText += IndentStr + FString::Printf(TEXT("    - Clipping Mode: %s\n"), *ClippingStr);
+
+    // Render Opacity (если не 1.0)
+    float Opacity = Overlay->GetRenderOpacity();
+    if (Opacity < 1.0f - KINDA_SMALL_NUMBER)
+    {
+        OutText += IndentStr + FString::Printf(TEXT("    - Render Opacity: %.2f\n"), Opacity);
+    }
+
+    // Дополнительная информация
+    OutText += IndentStr + TEXT("    - Layout Type: Overlay (children stacked on top of each other)\n");
+    OutText += IndentStr + TEXT("    - Ordering: By ZOrder in Overlay Slots\n");
+
+    // Полезное замечание
+    if (ChildCount > 1)
+    {
+        OutText += IndentStr + FString::Printf(TEXT("    - Note: %d widgets are layered on top of each other\n"), ChildCount);
+    }
+
+    OutText += TEXT("\n");
+}
+
