@@ -2350,3 +2350,243 @@ void BPR_Extractor_Widget::HandleEditableTextProperties(UEditableText* EditableT
 
     OutText += TEXT("\n");
 }
+
+void BPR_Extractor_Widget::HandleEditableTextBoxProperties(UEditableTextBox* EditableTextBox, FString& OutText, int32 Indent)
+{
+    if (!EditableTextBox) return;
+
+    FString IndentStr = FString::ChrN(Indent * 2, ' ');
+
+    OutText += IndentStr + TEXT("  - EditableTextBox Properties:\n");
+
+    // Текущий текст
+    FText CurrentText = EditableTextBox->GetText();
+    OutText += IndentStr + FString::Printf(TEXT("    - Text: \"%s\"\n"), *CurrentText.ToString());
+
+    // Hint Text (подсказка)
+    FText HintText = EditableTextBox->GetHintText();
+    if (!HintText.IsEmpty())
+    {
+        OutText += IndentStr + FString::Printf(TEXT("    - Hint Text: \"%s\"\n"), *HintText.ToString());
+    }
+
+    // Is Read Only
+    OutText += IndentStr + FString::Printf(TEXT("    - Is Read Only: %s\n"),
+        EditableTextBox->GetIsReadOnly() ? TEXT("True") : TEXT("False"));
+
+    // Is Password
+    OutText += IndentStr + FString::Printf(TEXT("    - Is Password Field: %s\n"),
+        EditableTextBox->GetIsPassword() ? TEXT("True") : TEXT("False"));
+
+    // Font и размер
+    const FEditableTextBoxStyle& Style = EditableTextBox->GetWidgetStyle();
+    const FSlateFontInfo& Font = Style.TextStyle.Font;
+
+    OutText += IndentStr + FString::Printf(TEXT("    - Font Size: %d\n"), (int32)Font.Size);
+
+    if (IsValid(Font.FontObject))
+    {
+        OutText += IndentStr + FString::Printf(TEXT("    - Font: %s\n"), *Font.FontObject->GetName());
+    }
+
+    // Цвет текста
+    FSlateColor TextColor = Style.TextStyle.ColorAndOpacity;
+    FLinearColor LinearColor = TextColor.GetSpecifiedColor();
+    OutText += IndentStr + FString::Printf(TEXT("    - Text Color: R:%.2f G:%.2f B:%.2f A:%.2f\n"),
+        LinearColor.R, LinearColor.G, LinearColor.B, LinearColor.A);
+
+    // Background Color
+    FSlateColor BgColor = Style.BackgroundColor;
+    FLinearColor LinearBg = BgColor.GetSpecifiedColor();
+    OutText += IndentStr + FString::Printf(TEXT("    - Background Color: R:%.2f G:%.2f B:%.2f A:%.2f\n"),
+        LinearBg.R, LinearBg.G, LinearBg.B, LinearBg.A);
+
+    // Padding
+    OutText += IndentStr + FString::Printf(TEXT("    - Padding: L:%.1f T:%.1f R:%.1f B:%.1f\n"),
+        Style.Padding.Left, Style.Padding.Top, Style.Padding.Right, Style.Padding.Bottom);
+}
+
+void BPR_Extractor_Widget::HandleSpinBoxProperties(USpinBox* SpinBox, FString& OutText, int32 Indent)
+{
+    if (!SpinBox)
+    {
+        return;
+    }
+
+    FString IndentStr = FString::ChrN(Indent * 2, ' ');
+
+    OutText += IndentStr + TEXT("  - SpinBox Properties:\n");
+
+    // === Основные значения ===
+    OutText += IndentStr + FString::Printf(TEXT("    - Current Value: %.4f\n"), SpinBox->GetValue());
+    OutText += IndentStr + FString::Printf(TEXT("    - Min Value: %.4f\n"), SpinBox->GetMinValue());
+    OutText += IndentStr + FString::Printf(TEXT("    - Max Value: %.4f\n"), SpinBox->GetMaxValue());
+
+    OutText += IndentStr + FString::Printf(TEXT("    - Delta (Step): %.6f\n"), SpinBox->GetDelta());
+    OutText += IndentStr + FString::Printf(TEXT("    - Slider Exponent: %.3f\n"), SpinBox->GetSliderExponent());
+
+    // Fractional digits
+    OutText += IndentStr + FString::Printf(TEXT("    - Min Fractional Digits: %d\n"), SpinBox->GetMinFractionalDigits());
+    OutText += IndentStr + FString::Printf(TEXT("    - Max Fractional Digits: %d\n"), SpinBox->GetMaxFractionalDigits());
+
+    // Слайдер и поведение
+    OutText += IndentStr + FString::Printf(TEXT("    - Enable Slider: %s\n"),
+        SpinBox->GetEnableSlider() ? TEXT("True") : TEXT("False"));
+
+    OutText += IndentStr + FString::Printf(TEXT("    - Always Uses Delta Snap: %s\n"),
+        SpinBox->GetAlwaysUsesDeltaSnap() ? TEXT("True") : TEXT("False"));
+
+    // Display / Input свойства
+    OutText += IndentStr + FString::Printf(TEXT("    - Justification: %s\n"),
+        *UEnum::GetValueAsString(SpinBox->GetJustification()));
+
+    OutText += IndentStr + FString::Printf(TEXT("    - Min Desired Width: %.1f\n"), SpinBox->GetMinDesiredWidth());
+
+    OutText += IndentStr + FString::Printf(TEXT("    - Clear Keyboard Focus On Commit: %s\n"),
+        SpinBox->GetClearKeyboardFocusOnCommit() ? TEXT("True") : TEXT("False"));
+
+    OutText += IndentStr + FString::Printf(TEXT("    - Select All Text On Commit: %s\n"),
+        SpinBox->GetSelectAllTextOnCommit() ? TEXT("True") : TEXT("False"));
+
+    // === Font (переопределяет стиль) ===
+    const FSlateFontInfo& Font = SpinBox->GetFont();
+
+    OutText += IndentStr + TEXT("    - Font:\n");
+    OutText += IndentStr + FString::Printf(TEXT("      - Size: %d\n"), (int32)Font.Size);
+
+    if (Font.FontObject)
+    {
+        OutText += IndentStr + FString::Printf(TEXT("      - Font Asset: %s\n"), *Font.FontObject->GetName());
+    }
+    else if (Font.TypefaceFontName != NAME_None)
+    {
+        OutText += IndentStr + FString::Printf(TEXT("      - Typeface: %s\n"), *Font.TypefaceFontName.ToString());
+    }
+    else
+    {
+        OutText += IndentStr + TEXT("      - Font: Default\n");
+    }
+
+    // Foreground Color (цвет текста)
+    FSlateColor Foreground = SpinBox->GetForegroundColor();
+    FLinearColor LinearFG = Foreground.GetSpecifiedColor();
+    OutText += IndentStr + FString::Printf(TEXT("    - Foreground Color: R:%.2f G:%.2f B:%.2f A:%.2f\n"),
+        LinearFG.R, LinearFG.G, LinearFG.B, LinearFG.A);
+
+    // === Стиль (WidgetStyle) ===
+    const FSpinBoxStyle& Style = SpinBox->GetWidgetStyle();
+
+    OutText += IndentStr + TEXT("    - Widget Style:\n");
+
+    if (Style.BackgroundBrush.GetResourceObject())
+    {
+        OutText += IndentStr + FString::Printf(TEXT("      - Background Brush: %s\n"),
+            *Style.BackgroundBrush.GetResourceObject()->GetName());
+    }
+
+    // Active / Hovered brushes (если используются)
+    if (Style.ActiveFillBrush.GetResourceObject())
+    {
+        OutText += IndentStr + FString::Printf(TEXT("      - Active Fill Brush: %s\n"),
+            *Style.ActiveFillBrush.GetResourceObject()->GetName());
+    }
+
+    OutText += TEXT("\n");
+}
+
+void BPR_Extractor_Widget::HandleComboBoxStringProperties(UComboBoxString* ComboBoxString, FString& OutText, int32 Indent)
+{
+    if (!ComboBoxString)
+    {
+        return;
+    }
+
+    FString IndentStr = FString::ChrN(Indent * 2, ' ');
+
+    OutText += IndentStr + TEXT("  - ComboBoxString Properties:\n");
+
+    // === Основное содержимое ===
+    OutText += IndentStr + FString::Printf(TEXT("    - Selected Option: \"%s\"\n"), 
+        *ComboBoxString->GetSelectedOption());
+
+    int32 OptionCount = ComboBoxString->GetOptionCount();
+    OutText += IndentStr + FString::Printf(TEXT("    - Option Count: %d\n"), OptionCount);
+
+    if (OptionCount > 0 && OptionCount <= 30)
+    {
+        OutText += IndentStr + TEXT("    - Options:\n");
+        for (int32 i = 0; i < OptionCount; ++i)
+        {
+            FString Option = ComboBoxString->GetOptionAtIndex(i);
+            OutText += IndentStr + FString::Printf(TEXT("      %2d. \"%s\"\n"), i, *Option);
+        }
+    }
+    else if (OptionCount > 30)
+    {
+        OutText += IndentStr + FString::Printf(TEXT("      ... (%d options total, too many to list)\n"), OptionCount);
+    }
+
+    // Основные флаги
+    OutText += IndentStr + FString::Printf(TEXT("    - Is Enabled: %s\n"),
+        ComboBoxString->GetIsEnabled() ? TEXT("True") : TEXT("False"));
+
+    OutText += IndentStr + FString::Printf(TEXT("    - Has Down Arrow: %s\n"),
+        ComboBoxString->IsHasDownArrow() ? TEXT("True") : TEXT("False"));
+
+    OutText += IndentStr + FString::Printf(TEXT("    - Is Focusable: %s\n"),
+        ComboBoxString->IsFocusable() ? TEXT("True") : TEXT("False"));
+
+    OutText += IndentStr + FString::Printf(TEXT("    - Enable Gamepad Navigation: %s\n"),
+        ComboBoxString->IsEnableGamepadNavigationMode() ? TEXT("True") : TEXT("False"));
+
+    // Padding и размеры
+    FMargin ContentPadding = ComboBoxString->GetContentPadding();
+    OutText += IndentStr + FString::Printf(TEXT("    - Content Padding: L:%.1f T:%.1f R:%.1f B:%.1f\n"),
+        ContentPadding.Left, ContentPadding.Top, ContentPadding.Right, ContentPadding.Bottom);
+
+    OutText += IndentStr + FString::Printf(TEXT("    - Max List Height: %.1f\n"), ComboBoxString->GetMaxListHeight());
+
+    // === Стиль (самое безопасное, что работает в UE 5.7) ===
+    const FComboBoxStyle& Style = ComboBoxString->GetWidgetStyle();
+    const FComboButtonStyle& ButtonStyle = Style.ComboButtonStyle;
+    const FButtonStyle& BtnStyle = ButtonStyle.ButtonStyle;   // основная кнопка комбобокса
+
+    OutText += IndentStr + TEXT("    - Widget Style:\n");
+
+    // Цвета текста кнопки (Foreground)
+    FSlateColor NormalTextColor = BtnStyle.NormalForeground;
+    FLinearColor LinearNormal = NormalTextColor.GetSpecifiedColor();
+    OutText += IndentStr + FString::Printf(TEXT("      - Normal Text Color: R:%.2f G:%.2f B:%.2f A:%.2f\n"),
+        LinearNormal.R, LinearNormal.G, LinearNormal.B, LinearNormal.A);
+
+    // Цвета при hover / pressed (если отличаются)
+    if (!BtnStyle.HoveredForeground.GetSpecifiedColor().Equals(LinearNormal, 0.01f))
+    {
+        FSlateColor HoverColor = BtnStyle.HoveredForeground;
+        FLinearColor LinearHover = HoverColor.GetSpecifiedColor();
+        OutText += IndentStr + FString::Printf(TEXT("      - Hovered Text Color: R:%.2f G:%.2f B:%.2f A:%.2f\n"),
+            LinearHover.R, LinearHover.G, LinearHover.B, LinearHover.A);
+    }
+
+    // Шрифт (берём из ComboBoxString, т.к. он часто переопределяется)
+    const FSlateFontInfo& Font = ComboBoxString->GetFont();
+    OutText += IndentStr + FString::Printf(TEXT("      - Font Size: %d\n"), (int32)Font.Size);
+
+    if (Font.FontObject)
+    {
+        OutText += IndentStr + FString::Printf(TEXT("      - Font: %s\n"), *Font.FontObject->GetName());
+    }
+    else if (Font.TypefaceFontName != NAME_None)
+    {
+        OutText += IndentStr + FString::Printf(TEXT("      - Typeface: %s\n"), *Font.TypefaceFontName.ToString());
+    }
+
+    // Item Style (цвет текста в выпадающем списке)
+    const FTableRowStyle& ItemStyle = ComboBoxString->GetItemStyle();
+    FSlateColor ItemTextColor = ItemStyle.TextColor;
+    FLinearColor LinearItem = ItemTextColor.GetSpecifiedColor();
+    OutText += IndentStr + FString::Printf(TEXT("      - Dropdown Item Text Color: R:%.2f G:%.2f B:%.2f A:%.2f\n"),
+        LinearItem.R, LinearItem.G, LinearItem.B, LinearItem.A);
+
+    OutText += TEXT("\n");
+}
