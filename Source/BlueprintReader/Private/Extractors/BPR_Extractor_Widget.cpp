@@ -3053,3 +3053,101 @@ void BPR_Extractor_Widget::HandleUniformGridPanelProperties(UUniformGridPanel* U
 
     OutText += TEXT("\n");
 }
+
+void BPR_Extractor_Widget::HandleListViewProperties(UListView* ListView, FString& OutText, int32 Indent)
+{
+    if (!ListView)
+    {
+        return;
+    }
+
+    FString IndentStr = FString::ChrN(Indent * 2, ' ');
+
+    OutText += IndentStr + TEXT("  - ListView Properties:\n");
+
+    // Основные свойства
+    OutText += IndentStr + FString::Printf(TEXT("    - Is Enabled: %s\n"),
+        ListView->GetIsEnabled() ? TEXT("True") : TEXT("False"));
+
+    // Количество элементов
+    int32 ItemCount = ListView->GetNumItems();
+    OutText += IndentStr + FString::Printf(TEXT("    - Total Items: %d\n"), ItemCount);
+
+    // Ориентация
+    EOrientation Orientation = ListView->GetOrientation();
+    OutText += IndentStr + FString::Printf(TEXT("    - Orientation: %s\n"),
+        *UEnum::GetValueAsString(Orientation));
+
+    // Режим выбора
+    ESelectionMode::Type SelectionMode = ListView->GetSelectionMode();
+    OutText += IndentStr + FString::Printf(TEXT("    - Selection Mode: %s\n"),
+        *UEnum::GetValueAsString(SelectionMode));
+
+    OutText += IndentStr + FString::Printf(TEXT("    - Is Multi-Select: %s\n"),
+        (SelectionMode == ESelectionMode::Multi) ? TEXT("True") : TEXT("False"));
+
+    // Пробел между элементами
+    OutText += IndentStr + FString::Printf(TEXT("    - Horizontal Entry Spacing: %.1f\n"),
+        ListView->GetHorizontalEntrySpacing());
+
+    OutText += IndentStr + FString::Printf(TEXT("    - Vertical Entry Spacing: %.1f\n"),
+        ListView->GetVerticalEntrySpacing());
+
+    // Скроллбар
+    FMargin ScrollBarPadding = ListView->GetScrollBarPadding();
+    OutText += IndentStr + FString::Printf(TEXT("    - ScrollBar Padding: L:%.1f T:%.1f R:%.1f B:%.1f\n"),
+        ScrollBarPadding.Left, ScrollBarPadding.Top, ScrollBarPadding.Right, ScrollBarPadding.Bottom);
+
+    // Другие полезные флаги (доступ через рефлексию, т.к. они private/protected)
+    OutText += IndentStr + TEXT("    - Additional Flags:\n");
+
+    static const FName Name_ClearSelectionOnClick("bClearSelectionOnClick");
+    static const FName Name_IsFocusable("bIsFocusable");
+    static const FName Name_ClearScrollVelocityOnSelection("bClearScrollVelocityOnSelection");
+
+    auto AppendBoolFlag = [&](const FName& PropName, const FString& DisplayName)
+    {
+        if (FBoolProperty* BoolProp = FindFProperty<FBoolProperty>(ListView->GetClass(), PropName))
+        {
+            bool Value = BoolProp->GetPropertyValue_InContainer(ListView);
+            OutText += IndentStr + FString::Printf(TEXT("      - %s: %s\n"), 
+                *DisplayName, Value ? TEXT("True") : TEXT("False"));
+        }
+        else
+        {
+            OutText += IndentStr + FString::Printf(TEXT("      - %s: (property not found)\n"), *DisplayName);
+        }
+    };
+
+    AppendBoolFlag(Name_ClearSelectionOnClick, "Clear Selection On Click");
+    AppendBoolFlag(Name_IsFocusable, "Is Focusable");
+    AppendBoolFlag(Name_ClearScrollVelocityOnSelection, "Clear Scroll Velocity On Selection");
+
+    // Clipping
+    EWidgetClipping ClippingMode = ListView->GetClipping();
+    FString ClippingStr = UEnum::GetValueAsString(ClippingMode);
+    ClippingStr.RemoveFromStart(TEXT("EWidgetClipping::"));
+    OutText += IndentStr + FString::Printf(TEXT("    - Clipping Mode: %s\n"), *ClippingStr);
+
+    // Render Opacity
+    float Opacity = ListView->GetRenderOpacity();
+    if (Opacity < 1.0f - KINDA_SMALL_NUMBER)
+    {
+        OutText += IndentStr + FString::Printf(TEXT("    - Render Opacity: %.2f\n"), Opacity);
+    }
+
+    // Описание
+    OutText += IndentStr + TEXT("    - Type: Virtualized ListView (only visible entries are created)\n");
+    OutText += IndentStr + TEXT("    - Uses UUserWidget entries via Entry Widget Class\n");
+
+    if (ItemCount > 0)
+    {
+        OutText += IndentStr + FString::Printf(TEXT("    - Currently has %d items in the list\n"), ItemCount);
+    }
+    else
+    {
+        OutText += IndentStr + TEXT("    - List is empty\n");
+    }
+
+    OutText += TEXT("\n");
+}
