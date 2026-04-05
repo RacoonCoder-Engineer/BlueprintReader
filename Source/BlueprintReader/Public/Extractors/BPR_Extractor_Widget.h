@@ -55,6 +55,8 @@
 #include "Components/CircularThrobber.h"
 #include "Components/ExpandableArea.h"
 #include "Components/BackgroundBlur.h"
+#include "Components/UniformGridPanel.h"
+#include "Components/UniformGridSlot.h"
 #include "Components/RichTextBlockDecorator.h"
 #include "Components/RichTextBlockImageDecorator.h"
 #include "Containers/ScriptArray.h"
@@ -220,6 +222,7 @@ private:
     void HandleScrollBoxProperties(UScrollBox* ScrollBox, FString& OutText, int32 Indent);
     void HandleSizeBoxProperties(USizeBox* SizeBox, FString& OutText, int32 Indent);
     void HandleGridPanelProperties(UGridPanel* GridPanel, FString& OutText, int32 Indent);
+    void HandleUniformGridPanelProperties(UUniformGridPanel* UniformGridPanel, FString& OutText, int32 Indent);
 
     /** ====================== List & View Widgets ====================== */
     void HandleListViewProperties(UListView* ListView, FString& OutText, int32 Indent);

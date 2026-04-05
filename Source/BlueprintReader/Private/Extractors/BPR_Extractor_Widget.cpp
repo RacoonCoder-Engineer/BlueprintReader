@@ -2996,3 +2996,60 @@ void BPR_Extractor_Widget::HandleGridPanelProperties(UGridPanel* GridPanel, FStr
 
     OutText += TEXT("\n");
 }
+
+void BPR_Extractor_Widget::HandleUniformGridPanelProperties(UUniformGridPanel* UniformGridPanel, FString& OutText, int32 Indent)
+{
+    if (!UniformGridPanel)
+    {
+        return;
+    }
+
+    FString IndentStr = FString::ChrN(Indent * 2, ' ');
+
+    OutText += IndentStr + TEXT("  - UniformGridPanel Properties:\n");
+
+    // Основные свойства
+    OutText += IndentStr + FString::Printf(TEXT("    - Is Enabled: %s\n"),
+        UniformGridPanel->GetIsEnabled() ? TEXT("True") : TEXT("False"));
+
+    int32 ChildCount = UniformGridPanel->GetChildrenCount();
+    OutText += IndentStr + FString::Printf(TEXT("    - Child Count: %d\n"), ChildCount);
+
+    // Самые важные свойства UniformGridPanel
+    OutText += IndentStr + FString::Printf(TEXT("    - Slot Padding: L:%.1f T:%.1f R:%.1f B:%.1f\n"),
+        UniformGridPanel->GetSlotPadding().Left,
+        UniformGridPanel->GetSlotPadding().Top,
+        UniformGridPanel->GetSlotPadding().Right,
+        UniformGridPanel->GetSlotPadding().Bottom);
+
+    OutText += IndentStr + FString::Printf(TEXT("    - Min Desired Slot Width: %.1f\n"),
+        UniformGridPanel->GetMinDesiredSlotWidth());
+
+    OutText += IndentStr + FString::Printf(TEXT("    - Min Desired Slot Height: %.1f\n"),
+        UniformGridPanel->GetMinDesiredSlotHeight());
+
+    // Clipping
+    EWidgetClipping ClippingMode = UniformGridPanel->GetClipping();
+    FString ClippingStr = UEnum::GetValueAsString(ClippingMode);
+    ClippingStr.RemoveFromStart(TEXT("EWidgetClipping::"));
+    OutText += IndentStr + FString::Printf(TEXT("    - Clipping Mode: %s\n"), *ClippingStr);
+
+    // Render Opacity
+    float Opacity = UniformGridPanel->GetRenderOpacity();
+    if (Opacity < 1.0f - KINDA_SMALL_NUMBER)
+    {
+        OutText += IndentStr + FString::Printf(TEXT("    - Render Opacity: %.2f\n"), Opacity);
+    }
+
+    // Описание поведения
+    OutText += IndentStr + TEXT("    - Layout Type: Uniform Grid (all slots have equal size)\n");
+    OutText += IndentStr + TEXT("    - Children placed using UUniformGridSlot (Row, Column)\n");
+    OutText += IndentStr + TEXT("    - All cells are forced to the same size based on Min Desired Slot Width/Height\n");
+
+    if (ChildCount > 0)
+    {
+        OutText += IndentStr + FString::Printf(TEXT("    - Note: Grid will automatically arrange %d children in uniform cells\n"), ChildCount);
+    }
+
+    OutText += TEXT("\n");
+}
