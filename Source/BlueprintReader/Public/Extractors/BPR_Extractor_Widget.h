@@ -6,22 +6,10 @@
 
 #include "CoreMinimal.h"
 #include "Core/BPR_Core.h"
-#include "Blueprint/UserWidget.h"
 #include "WidgetBlueprint.h"
 #include "Components/Widget.h"
-#include "Components/PanelSlot.h"
-#include "Components/PanelWidget.h"
-#include "Components/WidgetComponent.h"
-#include "Blueprint/WidgetTree.h"
-#include "Animation/WidgetAnimation.h"
-#include "Components/CanvasPanelSlot.h"
-#include "Components/HorizontalBoxSlot.h"
-#include "Components/VerticalBoxSlot.h"
-#include "Components/OverlaySlot.h"
-#include "Components/SizeBoxSlot.h"
 #include "Styling/SlateColor.h"         
 #include "Layout/Visibility.h"          
-#include "Slate/WidgetTransform.h"
 #include "Components/TextBlock.h"
 #include "Components/Image.h"
 #include "Components/Button.h"
@@ -56,9 +44,6 @@
 #include "Components/ExpandableArea.h"
 #include "Components/BackgroundBlur.h"
 #include "Components/UniformGridPanel.h"
-#include "Components/UniformGridSlot.h"
-#include "Components/RichTextBlockDecorator.h"
-#include "Components/RichTextBlockImageDecorator.h"
 #include "Containers/ScriptArray.h"
 #include "Styling/SlateTypes.h"      
 #include "UObject/UnrealType.h"  
@@ -163,9 +148,6 @@ private:
         int32 CurrentDepth,
         FString& OutText,
         TSet<UWidget*>& Visited);
-    
-    /** Форматирование одного виджета + его слота */
-    FString FormatWidgetInfo(UWidget* Widget, UPanelSlot* Slot, int32 Indent);
 
     /** Свойства слота (Anchors, Offsets, Alignment, Padding) */
     void AppendSlotProperties(UPanelSlot* Slot, FString& OutText, int32 Indent);

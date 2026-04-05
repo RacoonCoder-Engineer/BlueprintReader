@@ -71,7 +71,6 @@
 #include "Components/Widget.h"
 #include "Components/PanelSlot.h"
 #include "Components/PanelWidget.h"
-#include "Components/WidgetComponent.h"
 #include "Blueprint/WidgetTree.h"
 #include "Animation/WidgetAnimation.h"
 #include "Components/CanvasPanelSlot.h"
@@ -423,7 +422,7 @@ void BPR_Extractor_Widget::AppendWidgetProperties(UWidget* Widget, FString& OutT
     if (!Widget)
     {
         FString IndentStr = FString::ChrN(Indent * 2, ' ');
-        OutText += IndentStr + TEXT("- Properties: None (null widget)\n");
+        OutText += IndentStr + TEXT("Properties: None (null widget)\n");
         LogWarning(TEXT("AppendWidgetProperties: Widget is null"));
         return;
     }
@@ -431,118 +430,11 @@ void BPR_Extractor_Widget::AppendWidgetProperties(UWidget* Widget, FString& OutT
     FString IndentStr = FString::ChrN(Indent * 2, ' ');
     OutText += IndentStr + TEXT("Properties:\n");
 
-    // Общие свойства (всегда выводим)
-    OutText += IndentStr + FString::Printf(TEXT("  - Visibility: %s\n"),
-        *UEnum::GetValueAsString(Widget->GetVisibility()));
+    // 1. Общие свойства для ВСЕХ виджетов
+    AppendCommonProperties(Widget, OutText, Indent);
 
-    OutText += IndentStr + FString::Printf(TEXT("  - Is Enabled: %s\n"),
-        Widget->GetIsEnabled() ? TEXT("True") : TEXT("False"));
-
-    float Opacity = Widget->GetRenderOpacity();
-    OutText += IndentStr + FString::Printf(TEXT("  - Render Opacity: %.2f\n"), Opacity);
-
-    FWidgetTransform Transform = Widget->GetRenderTransform();
-    if (!Transform.IsIdentity())
-    {
-        OutText += IndentStr + TEXT("  - Render Transform:\n");
-        OutText += IndentStr + FString::Printf(TEXT("    - Scale: %.2f x %.2f\n"),
-            Transform.Scale.X, Transform.Scale.Y);
-        OutText += IndentStr + FString::Printf(TEXT("    - Rotation: %.1f deg\n"),
-            Transform.Angle);
-        OutText += IndentStr + FString::Printf(TEXT("    - Translation: X:%.0f Y:%.0f\n"),
-            Transform.Translation.X, Transform.Translation.Y);
-    }
-
-    // Специфичные свойства — только через Cast
-    if (UTextBlock* TextBlock = Cast<UTextBlock>(Widget))
-    {
-        OutText += IndentStr + TEXT("  - TextBlock Properties:\n");
-        OutText += IndentStr + FString::Printf(TEXT("    - Text: \"%s\"\n"),
-            *TextBlock->GetText().ToString());
-        FSlateFontInfo Font = TextBlock->GetFont();
-        OutText += IndentStr + FString::Printf(TEXT("    - Font Size: %d\n"), (int32)Font.Size);
-
-        // Justification через reflection (без спама логов, только если не нашли)
-        static const FName JustificationPropName(TEXT("Justification"));
-        if (FProperty* Prop = TextBlock->GetClass()->FindPropertyByName(JustificationPropName))
-        {
-            if (FByteProperty* ByteProp = CastField<FByteProperty>(Prop))
-            {
-                uint8 RawValue = 0;
-                ByteProp->GetValue_InContainer(TextBlock, &RawValue);
-                ETextJustify::Type Justification = static_cast<ETextJustify::Type>(RawValue);
-
-                // Выводим всегда, чтобы видеть явно (можно оставить только != Left, как было)
-                OutText += IndentStr + FString::Printf(TEXT("    - Justification: %s\n"),
-                    *UEnum::GetValueAsString(Justification));
-            }
-            else
-            {
-                LogWarning(FString::Printf(TEXT("Justification property in TextBlock is not ByteProperty! Type: %s"),
-                    *Prop->GetClass()->GetName()));
-            }
-        }
-        else
-        {
-            LogWarning(TEXT("Justification property not found in UTextBlock"));
-        }
-
-        FSlateColor TextColor = TextBlock->GetColorAndOpacity();
-        OutText += IndentStr + FString::Printf(TEXT("    - Text Color: R:%.2f G:%.2f B:%.2f A:%.2f\n"),
-            TextColor.GetSpecifiedColor().R, TextColor.GetSpecifiedColor().G,
-            TextColor.GetSpecifiedColor().B, TextColor.GetSpecifiedColor().A);
-    }
-    else if (UImage* Image = Cast<UImage>(Widget))
-    {
-        OutText += IndentStr + TEXT("  - Image Properties:\n");
-        FSlateBrush Brush = Image->GetBrush();
-        if (Brush.GetResourceObject())
-        {
-            OutText += IndentStr + FString::Printf(TEXT("    - Brush: %s (Size: %.0fx%.0f)\n"),
-                *Brush.GetResourceObject()->GetName(),
-                Brush.ImageSize.X, Brush.ImageSize.Y);
-        }
-        FSlateColor BrushColor = Brush.TintColor;
-        OutText += IndentStr + FString::Printf(TEXT("    - Brush Color: R:%.2f G:%.2f B:%.2f A:%.2f\n"),
-            BrushColor.GetSpecifiedColor().R,
-            BrushColor.GetSpecifiedColor().G,
-            BrushColor.GetSpecifiedColor().B,
-            BrushColor.GetSpecifiedColor().A);
-    }
-    else if (UButton* Button = Cast<UButton>(Widget))
-    {
-        OutText += IndentStr + TEXT("  - Button Properties:\n");
-        FSlateColor BtnColor = Button->GetColorAndOpacity();
-        OutText += IndentStr + FString::Printf(TEXT("    - Color & Opacity: R:%.2f G:%.2f B:%.2f A:%.2f\n"),
-            BtnColor.GetSpecifiedColor().R, BtnColor.GetSpecifiedColor().G,
-            BtnColor.GetSpecifiedColor().B, BtnColor.GetSpecifiedColor().A);
-    }
-    else if (UBorder* Border = Cast<UBorder>(Widget))
-    {
-        OutText += IndentStr + TEXT("  - Border Properties:\n");
-        FLinearColor BrushColor = Border->GetBrushColor();
-        OutText += IndentStr + FString::Printf(TEXT("    - Brush Color: R:%.2f G:%.2f B:%.2f A:%.2f\n"),
-            BrushColor.R, BrushColor.G, BrushColor.B, BrushColor.A);
-    }
-    else if (UProgressBar* Progress = Cast<UProgressBar>(Widget))
-    {
-        OutText += IndentStr + TEXT("  - ProgressBar Properties:\n");
-        OutText += IndentStr + FString::Printf(TEXT("    - Percent: %.2f\n"), Progress->GetPercent());
-        FSlateColor FillColor = Progress->GetFillColorAndOpacity();
-        OutText += IndentStr + FString::Printf(TEXT("    - Fill Color: R:%.2f G:%.2f B:%.2f A:%.2f\n"),
-            FillColor.GetSpecifiedColor().R,
-            FillColor.GetSpecifiedColor().G,
-            FillColor.GetSpecifiedColor().B,
-            FillColor.GetSpecifiedColor().A);
-    }
-    else
-    {
-        // Только здесь лог — если тип неизвестен
-        LogWarning(FString::Printf(TEXT("Unknown widget type for properties: %s"),
-            *Widget->GetClass()->GetName()));
-        OutText += IndentStr + FString::Printf(TEXT("  - Custom Widget: %s\n"),
-            *Widget->GetClass()->GetName());
-    }
+    // 2. Специфические свойства в зависимости от типа виджета
+    AppendWidgetTypeProperties(Widget, OutText, Indent);
 
     OutText += TEXT("\n");
 }
@@ -1568,12 +1460,14 @@ void BPR_Extractor_Widget::AppendWidgetTypeProperties(UWidget* Widget, FString& 
 {
     if (!Widget) return;
 
-    FString IndentStr = FString::ChrN(Indent * 2, ' ');
-
-    // Специфические обработчики по типу виджета
+    // ====================== Common Widgets ======================
     if (UTextBlock* TextBlock = Cast<UTextBlock>(Widget))
     {
         HandleTextBlockProperties(TextBlock, OutText, Indent);
+    }
+    else if (URichTextBlock* RichText = Cast<URichTextBlock>(Widget))
+    {
+        HandleRichTextBlockProperties(RichText, OutText, Indent);
     }
     else if (UImage* Image = Cast<UImage>(Widget))
     {
@@ -1591,9 +1485,102 @@ void BPR_Extractor_Widget::AppendWidgetTypeProperties(UWidget* Widget, FString& 
     {
         HandleProgressBarProperties(Progress, OutText, Indent);
     }
+    else if (USlider* Slider = Cast<USlider>(Widget))
+    {
+        HandleSliderProperties(Slider, OutText, Indent);
+    }
+    else if (UCheckBox* CheckBox = Cast<UCheckBox>(Widget))
+    {
+        HandleCheckBoxProperties(CheckBox, OutText, Indent);
+    }
+
+    // ====================== Input Widgets ======================
+    else if (UEditableText* EditableText = Cast<UEditableText>(Widget))
+    {
+        HandleEditableTextProperties(EditableText, OutText, Indent);
+    }
+    else if (UEditableTextBox* EditableTextBox = Cast<UEditableTextBox>(Widget))
+    {
+        HandleEditableTextBoxProperties(EditableTextBox, OutText, Indent);
+    }
+    else if (USpinBox* SpinBox = Cast<USpinBox>(Widget))
+    {
+        HandleSpinBoxProperties(SpinBox, OutText, Indent);
+    }
+    else if (UComboBoxString* ComboBox = Cast<UComboBoxString>(Widget))
+    {
+        HandleComboBoxStringProperties(ComboBox, OutText, Indent);
+    }
+
+    // ====================== Panel & Layout Widgets ======================
+    else if (UCanvasPanel* Canvas = Cast<UCanvasPanel>(Widget))
+    {
+        HandleCanvasPanelProperties(Canvas, OutText, Indent);
+    }
+    else if (UOverlay* Overlay = Cast<UOverlay>(Widget))
+    {
+        HandleOverlayProperties(Overlay, OutText, Indent);
+    }
+    else if (UHorizontalBox* HBox = Cast<UHorizontalBox>(Widget))
+    {
+        HandleHorizontalBoxProperties(HBox, OutText, Indent);
+    }
+    else if (UVerticalBox* VBox = Cast<UVerticalBox>(Widget))
+    {
+        HandleVerticalBoxProperties(VBox, OutText, Indent);
+    }
+    else if (UScrollBox* ScrollBox = Cast<UScrollBox>(Widget))
+    {
+        HandleScrollBoxProperties(ScrollBox, OutText, Indent);
+    }
+    else if (USizeBox* SizeBox = Cast<USizeBox>(Widget))
+    {
+        HandleSizeBoxProperties(SizeBox, OutText, Indent);
+    }
+    else if (UGridPanel* Grid = Cast<UGridPanel>(Widget))
+    {
+        HandleGridPanelProperties(Grid, OutText, Indent);
+    }
+    else if (UUniformGridPanel* UniformGrid = Cast<UUniformGridPanel>(Widget))
+    {
+        HandleUniformGridPanelProperties(UniformGrid, OutText, Indent);
+    }
+
+    // ====================== List & View Widgets ======================
+    else if (UListView* ListView = Cast<UListView>(Widget))
+    {
+        HandleListViewProperties(ListView, OutText, Indent);
+    }
+    else if (UTileView* TileView = Cast<UTileView>(Widget))
+    {
+        HandleTileViewProperties(TileView, OutText, Indent);
+    }
+    else if (UTreeView* TreeView = Cast<UTreeView>(Widget))
+    {
+        HandleTreeViewProperties(TreeView, OutText, Indent);
+    }
+
+    // ====================== Special Widgets ======================
+    else if (UThrobber* Throbber = Cast<UThrobber>(Widget))
+    {
+        HandleThrobberProperties(Throbber, OutText, Indent);
+    }
+    else if (UCircularThrobber* Circular = Cast<UCircularThrobber>(Widget))
+    {
+        HandleCircularThrobberProperties(Circular, OutText, Indent);
+    }
+    else if (UBackgroundBlur* Blur = Cast<UBackgroundBlur>(Widget))
+    {
+        HandleBackgroundBlurProperties(Blur, OutText, Indent);
+    }
+    else if (UExpandableArea* Expandable = Cast<UExpandableArea>(Widget))
+    {
+        HandleExpandableAreaProperties(Expandable, OutText, Indent);
+    }
+
+    // ====================== Fallback ======================
     else
     {
-        // Fallback для всех остальных виджетов (включая RichTextBlock пока)
         HandleUnknownWidget(Widget, OutText, Indent);
     }
 }
