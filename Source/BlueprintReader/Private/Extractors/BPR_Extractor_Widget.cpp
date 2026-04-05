@@ -94,6 +94,8 @@
 #include "Styling/SlateTypes.h"
 #include "Layout/Margin.h"
 #include "UObject/ObjectMacros.h"
+#include "Types/SlateEnums.h"        // для EOrientation, EConsumeMouseWheel и т.д.
+#include "Layout/Clipping.h"         // для EWidgetClipping
 
 
 BPR_Extractor_Widget::BPR_Extractor_Widget()
@@ -2686,3 +2688,187 @@ void BPR_Extractor_Widget::HandleOverlayProperties(UOverlay* Overlay, FString& O
     OutText += TEXT("\n");
 }
 
+void BPR_Extractor_Widget::HandleHorizontalBoxProperties(UHorizontalBox* HorizontalBox, FString& OutText, int32 Indent)
+{
+    if (!HorizontalBox)
+    {
+        return;
+    }
+
+    FString IndentStr = FString::ChrN(Indent * 2, ' ');
+
+    OutText += IndentStr + TEXT("  - HorizontalBox Properties:\n");
+
+    // Основные свойства
+    OutText += IndentStr + FString::Printf(TEXT("    - Is Enabled: %s\n"),
+        HorizontalBox->GetIsEnabled() ? TEXT("True") : TEXT("False"));
+
+    // Количество детей
+    int32 ChildCount = HorizontalBox->GetChildrenCount();
+    OutText += IndentStr + FString::Printf(TEXT("    - Child Count: %d\n"), ChildCount);
+
+    // Clipping
+    EWidgetClipping ClippingMode = HorizontalBox->GetClipping();
+    FString ClippingStr = UEnum::GetValueAsString(ClippingMode);
+    ClippingStr.RemoveFromStart(TEXT("EWidgetClipping::"));
+
+    OutText += IndentStr + FString::Printf(TEXT("    - Clipping Mode: %s\n"), *ClippingStr);
+
+    // Render Opacity (если не 1.0)
+    float Opacity = HorizontalBox->GetRenderOpacity();
+    if (Opacity < 1.0f - KINDA_SMALL_NUMBER)
+    {
+        OutText += IndentStr + FString::Printf(TEXT("    - Render Opacity: %.2f\n"), Opacity);
+    }
+
+    // Специфично для HorizontalBox
+    OutText += IndentStr + TEXT("    - Layout Type: Horizontal Box (left to right)\n");
+    OutText += IndentStr + TEXT("    - Child Ordering: By slot order in the hierarchy\n");
+
+    if (ChildCount > 0)
+    {
+        OutText += IndentStr + FString::Printf(TEXT("    - Children are arranged horizontally with their Slot Padding and Alignment\n"));
+    }
+
+    // Полезная подсказка
+    OutText += IndentStr + TEXT("    - Note: Each child uses UHorizontalBoxSlot with:\n");
+    OutText += IndentStr + TEXT("      • Horizontal Alignment (Fill, Left, Center, Right)\n");
+    OutText += IndentStr + TEXT("      • Vertical Alignment\n");
+    OutText += IndentStr + TEXT("      • Size Rule (Auto, Stretch)\n");
+
+    OutText += TEXT("\n");
+}
+
+void BPR_Extractor_Widget::HandleVerticalBoxProperties(UVerticalBox* VerticalBox, FString& OutText, int32 Indent)
+{
+    if (!VerticalBox)
+    {
+        return;
+    }
+
+    FString IndentStr = FString::ChrN(Indent * 2, ' ');
+
+    OutText += IndentStr + TEXT("  - VerticalBox Properties:\n");
+
+    // Основные свойства
+    OutText += IndentStr + FString::Printf(TEXT("    - Is Enabled: %s\n"),
+        VerticalBox->GetIsEnabled() ? TEXT("True") : TEXT("False"));
+
+    // Количество детей
+    int32 ChildCount = VerticalBox->GetChildrenCount();
+    OutText += IndentStr + FString::Printf(TEXT("    - Child Count: %d\n"), ChildCount);
+
+    // Clipping
+    EWidgetClipping ClippingMode = VerticalBox->GetClipping();
+    FString ClippingStr = UEnum::GetValueAsString(ClippingMode);
+    ClippingStr.RemoveFromStart(TEXT("EWidgetClipping::"));
+
+    OutText += IndentStr + FString::Printf(TEXT("    - Clipping Mode: %s\n"), *ClippingStr);
+
+    // Render Opacity (если не 1.0)
+    float Opacity = VerticalBox->GetRenderOpacity();
+    if (Opacity < 1.0f - KINDA_SMALL_NUMBER)
+    {
+        OutText += IndentStr + FString::Printf(TEXT("    - Render Opacity: %.2f\n"), Opacity);
+    }
+
+    // Специфика VerticalBox
+    OutText += IndentStr + TEXT("    - Layout Type: Vertical Box (top to bottom)\n");
+    OutText += IndentStr + TEXT("    - Child Ordering: By slot order in the hierarchy\n");
+
+    if (ChildCount > 0)
+    {
+        OutText += IndentStr + FString::Printf(TEXT("    - Children are arranged vertically with their Slot Padding and Alignment\n"));
+    }
+
+    // Полезная информация о слотах
+    OutText += IndentStr + TEXT("    - Note: Each child uses UVerticalBoxSlot with:\n");
+    OutText += IndentStr + TEXT("      • Horizontal Alignment (Left, Center, Right, Fill)\n");
+    OutText += IndentStr + TEXT("      • Vertical Alignment (Top, Center, Bottom, Fill)\n");
+    OutText += IndentStr + TEXT("      • Size Rule (Auto, Stretch)\n");
+
+    OutText += TEXT("\n");
+}
+
+void BPR_Extractor_Widget::HandleScrollBoxProperties(UScrollBox* ScrollBox, FString& OutText, int32 Indent)
+{
+    if (!ScrollBox)
+    {
+        return;
+    }
+
+    FString IndentStr = FString::ChrN(Indent * 2, ' ');
+
+    OutText += IndentStr + TEXT("  - ScrollBox Properties:\n");
+
+    // Основные свойства
+    OutText += IndentStr + FString::Printf(TEXT("    - Is Enabled: %s\n"),
+        ScrollBox->GetIsEnabled() ? TEXT("True") : TEXT("False"));
+
+    int32 ChildCount = ScrollBox->GetChildrenCount();
+    OutText += IndentStr + FString::Printf(TEXT("    - Child Count: %d\n"), ChildCount);
+
+    // Ориентация — самое важное
+    EOrientation Orientation = ScrollBox->GetOrientation();
+    OutText += IndentStr + FString::Printf(TEXT("    - Orientation: %s\n"),
+        *UEnum::GetValueAsString(Orientation));
+
+    // Поведение скролла
+    OutText += IndentStr + FString::Printf(TEXT("    - Scroll When Focus Changes: %s\n"),
+        *UEnum::GetValueAsString(ScrollBox->GetScrollWhenFocusChanges()));
+
+    OutText += IndentStr + FString::Printf(TEXT("    - Animate Wheel Scrolling: %s\n"),
+        ScrollBox->IsAnimateWheelScrolling() ? TEXT("True") : TEXT("False"));
+
+    OutText += IndentStr + FString::Printf(TEXT("    - Always Show Scrollbar: %s\n"),
+        ScrollBox->IsAlwaysShowScrollbar() ? TEXT("True") : TEXT("False"));
+
+    OutText += IndentStr + FString::Printf(TEXT("    - Always Show Scrollbar Track: %s\n"),
+        ScrollBox->IsAlwaysShowScrollbarTrack() ? TEXT("True") : TEXT("False"));
+
+    OutText += IndentStr + FString::Printf(TEXT("    - Allow Overscroll: %s\n"),
+        ScrollBox->IsAllowOverscroll() ? TEXT("True") : TEXT("False"));
+
+    OutText += IndentStr + FString::Printf(TEXT("    - Allow Right Click Drag Scrolling: %s\n"),
+        ScrollBox->IsAllowRightClickDragScrolling() ? TEXT("True") : TEXT("False"));
+
+    OutText += IndentStr + FString::Printf(TEXT("    - Enable Touch Scrolling: %s\n"),
+        ScrollBox->GetIsTouchScrollingEnabled() ? TEXT("True") : TEXT("False"));
+
+    // Размеры и отступы
+    OutText += IndentStr + FString::Printf(TEXT("    - Scrollbar Thickness: %.1f\n"), 
+        ScrollBox->GetScrollbarThickness().X);   // обычно X используется как толщина
+
+    FMargin ScrollbarPadding = ScrollBox->GetScrollbarPadding();
+    OutText += IndentStr + FString::Printf(TEXT("    - Scrollbar Padding: L:%.1f T:%.1f R:%.1f B:%.1f\n"),
+        ScrollbarPadding.Left, ScrollbarPadding.Top, ScrollbarPadding.Right, ScrollbarPadding.Bottom);
+
+    // Дополнительные полезные параметры
+    OutText += IndentStr + FString::Printf(TEXT("    - Wheel Scroll Multiplier: %.2f\n"), 
+        ScrollBox->GetWheelScrollMultiplier());
+
+    OutText += IndentStr + FString::Printf(TEXT("    - Scroll Animation Speed: %.1f\n"), 
+        ScrollBox->GetScrollAnimationInterpolationSpeed());
+
+    // Clipping
+    EWidgetClipping ClippingMode = ScrollBox->GetClipping();
+    FString ClippingStr = UEnum::GetValueAsString(ClippingMode);
+    ClippingStr.RemoveFromStart(TEXT("EWidgetClipping::"));
+    OutText += IndentStr + FString::Printf(TEXT("    - Clipping Mode: %s\n"), *ClippingStr);
+
+    // Render Opacity
+    float Opacity = ScrollBox->GetRenderOpacity();
+    if (Opacity < 1.0f - KINDA_SMALL_NUMBER)
+    {
+        OutText += IndentStr + FString::Printf(TEXT("    - Render Opacity: %.2f\n"), Opacity);
+    }
+
+    // Описание поведения
+    OutText += IndentStr + TEXT("    - Layout Type: Scrollable Container\n");
+    if (Orientation == EOrientation::Orient_Vertical)
+        OutText += IndentStr + TEXT("    - Scrolling Direction: Vertical\n");
+    else
+        OutText += IndentStr + TEXT("    - Scrolling Direction: Horizontal\n");
+
+    OutText += TEXT("\n");
+}
