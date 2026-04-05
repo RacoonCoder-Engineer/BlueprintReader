@@ -3409,3 +3409,138 @@ void BPR_Extractor_Widget::HandleCircularThrobberProperties(UCircularThrobber* C
 
     OutText += TEXT("\n");
 }
+
+void BPR_Extractor_Widget::HandleExpandableAreaProperties(UExpandableArea* ExpandableArea, FString& OutText, int32 Indent)
+{
+    if (!ExpandableArea)
+    {
+        return;
+    }
+
+    FString IndentStr = FString::ChrN(Indent * 2, ' ');
+
+    OutText += IndentStr + TEXT("  - ExpandableArea Properties:\n");
+
+    // Основное состояние
+    OutText += IndentStr + FString::Printf(TEXT("    - Is Enabled: %s\n"),
+        ExpandableArea->GetIsEnabled() ? TEXT("True") : TEXT("False"));
+
+    OutText += IndentStr + FString::Printf(TEXT("    - Is Expanded: %s\n"),
+        ExpandableArea->GetIsExpanded() ? TEXT("True") : TEXT("False"));
+
+    // Padding
+    OutText += IndentStr + FString::Printf(TEXT("    - Header Padding: L:%.1f T:%.1f R:%.1f B:%.1f\n"),
+        ExpandableArea->GetHeaderPadding().Left,
+        ExpandableArea->GetHeaderPadding().Top,
+        ExpandableArea->GetHeaderPadding().Right,
+        ExpandableArea->GetHeaderPadding().Bottom);
+
+    OutText += IndentStr + FString::Printf(TEXT("    - Area Padding: L:%.1f T:%.1f R:%.1f B:%.1f\n"),
+        ExpandableArea->GetAreaPadding().Left,
+        ExpandableArea->GetAreaPadding().Top,
+        ExpandableArea->GetAreaPadding().Right,
+        ExpandableArea->GetAreaPadding().Bottom);
+
+    OutText += IndentStr + FString::Printf(TEXT("    - Max Height: %.1f\n"), 
+        ExpandableArea->GetMaxHeight());
+
+    // Стиль
+    const FExpandableAreaStyle& Style = ExpandableArea->GetStyle();
+
+    OutText += IndentStr + FString::Printf(TEXT("    - Rollout Animation Duration: %.2f sec\n"), 
+        Style.RolloutAnimationSeconds);
+
+    // Изображения для состояний
+    if (Style.CollapsedImage.GetResourceObject())
+    {
+        OutText += IndentStr + FString::Printf(TEXT("    - Collapsed Image: %s\n"), 
+            *Style.CollapsedImage.GetResourceObject()->GetName());
+    }
+
+    if (Style.ExpandedImage.GetResourceObject())
+    {
+        OutText += IndentStr + FString::Printf(TEXT("    - Expanded Image: %s\n"), 
+            *Style.ExpandedImage.GetResourceObject()->GetName());
+    }
+
+    // Clipping
+    EWidgetClipping ClippingMode = ExpandableArea->GetClipping();
+    FString ClippingStr = UEnum::GetValueAsString(ClippingMode);
+    ClippingStr.RemoveFromStart(TEXT("EWidgetClipping::"));
+    OutText += IndentStr + FString::Printf(TEXT("    - Clipping Mode: %s\n"), *ClippingStr);
+
+    // Render Opacity
+    float Opacity = ExpandableArea->GetRenderOpacity();
+    if (Opacity < 1.0f - KINDA_SMALL_NUMBER)
+    {
+        OutText += IndentStr + FString::Printf(TEXT("    - Render Opacity: %.2f\n"), Opacity);
+    }
+
+    OutText += IndentStr + TEXT("    - Type: Expandable Area (collapsible section with header)\n");
+
+    if (ExpandableArea->GetIsExpanded())
+        OutText += IndentStr + TEXT("    - Current State: Expanded\n");
+    else
+        OutText += IndentStr + TEXT("    - Current State: Collapsed\n");
+
+    OutText += TEXT("\n");
+}
+
+void BPR_Extractor_Widget::HandleBackgroundBlurProperties(UBackgroundBlur* BackgroundBlur, FString& OutText, int32 Indent)
+{
+    if (!BackgroundBlur)
+    {
+        return;
+    }
+
+    FString IndentStr = FString::ChrN(Indent * 2, ' ');
+
+    OutText += IndentStr + TEXT("  - BackgroundBlur Properties:\n");
+
+    // Основные свойства
+    OutText += IndentStr + FString::Printf(TEXT("    - Is Enabled: %s\n"),
+        BackgroundBlur->GetIsEnabled() ? TEXT("True") : TEXT("False"));
+
+    // Параметры блюра
+    OutText += IndentStr + FString::Printf(TEXT("    - Blur Strength: %.1f\n"), 
+        BackgroundBlur->GetBlurStrength());
+
+    OutText += IndentStr + FString::Printf(TEXT("    - Blur Radius: %d\n"), 
+        BackgroundBlur->GetBlurRadius());
+
+    // Скругление углов (твоя корректировка)
+    OutText += IndentStr + FString::Printf(TEXT("    - Show Corner Radius: %s\n"),
+        (BackgroundBlur->GetBlurRadius() > 0) ? TEXT("True") : TEXT("False"));
+
+    // Цвет тонирования
+    FLinearColor TintColor = BackgroundBlur->GetLowQualityFallbackBrush().TintColor.GetSpecifiedColor();
+    OutText += IndentStr + FString::Printf(TEXT("    - Tint Color: R:%.2f G:%.2f B:%.2f A:%.2f\n"),
+        TintColor.R, TintColor.G, TintColor.B, TintColor.A);
+
+    // Padding
+    FMargin Padding = BackgroundBlur->GetPadding();
+    OutText += IndentStr + FString::Printf(TEXT("    - Padding: L:%.1f T:%.1f R:%.1f B:%.1f\n"),
+        Padding.Left, Padding.Top, Padding.Right, Padding.Bottom);
+
+    // Дополнительные флаги
+    OutText += IndentStr + FString::Printf(TEXT("    - Apply Alpha to Blur: %s\n"),
+        BackgroundBlur->GetApplyAlphaToBlur() ? TEXT("True") : TEXT("False"));
+
+    // Clipping
+    EWidgetClipping ClippingMode = BackgroundBlur->GetClipping();
+    FString ClippingStr = UEnum::GetValueAsString(ClippingMode);
+    ClippingStr.RemoveFromStart(TEXT("EWidgetClipping::"));
+    OutText += IndentStr + FString::Printf(TEXT("    - Clipping Mode: %s\n"), *ClippingStr);
+
+    // Render Opacity
+    float Opacity = BackgroundBlur->GetRenderOpacity();
+    if (Opacity < 1.0f - KINDA_SMALL_NUMBER)
+    {
+        OutText += IndentStr + FString::Printf(TEXT("    - Render Opacity: %.2f\n"), Opacity);
+    }
+
+    OutText += IndentStr + TEXT("    - Type: Background Blur (Gaussian blur effect behind content)\n");
+    OutText += IndentStr + TEXT("    - Used for frosted glass / modern UI effects\n");
+
+    OutText += TEXT("\n");
+}
