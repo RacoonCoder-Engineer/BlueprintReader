@@ -3308,3 +3308,48 @@ void BPR_Extractor_Widget::HandleTreeViewProperties(UTreeView* TreeView, FString
     OutText += TEXT("\n");
 }
 
+void BPR_Extractor_Widget::HandleThrobberProperties(UThrobber* Throbber, FString& OutText, int32 Indent)
+{
+    if (!Throbber)
+    {
+        return;
+    }
+
+    FString IndentStr = FString::ChrN(Indent * 2, ' ');
+
+    OutText += IndentStr + TEXT("  - Throbber Properties:\n");
+
+    OutText += IndentStr + FString::Printf(TEXT("    - Is Enabled: %s\n"),
+        Throbber->GetIsEnabled() ? TEXT("True") : TEXT("False"));
+
+    OutText += IndentStr + FString::Printf(TEXT("    - Number of Pieces: %d\n"), Throbber->GetNumberOfPieces());
+
+    OutText += IndentStr + FString::Printf(TEXT("    - Animate Horizontally: %s\n"), Throbber->IsAnimateHorizontally() ? TEXT("True") : TEXT("False"));
+    OutText += IndentStr + FString::Printf(TEXT("    - Animate Vertically: %s\n"),   Throbber->IsAnimateVertically() ? TEXT("True") : TEXT("False"));
+    OutText += IndentStr + FString::Printf(TEXT("    - Animate Opacity: %s\n"),     Throbber->IsAnimateOpacity() ? TEXT("True") : TEXT("False"));
+
+    const FSlateBrush& Brush = Throbber->GetImage();
+    if (Brush.GetResourceObject())
+    {
+        OutText += IndentStr + FString::Printf(TEXT("    - Image Brush: %s\n"), *Brush.GetResourceObject()->GetName());
+    }
+    else
+    {
+        OutText += IndentStr + TEXT("    - Image Brush: Default\n");
+    }
+
+    EWidgetClipping ClippingMode = Throbber->GetClipping();
+    FString ClippingStr = UEnum::GetValueAsString(ClippingMode);
+    ClippingStr.RemoveFromStart(TEXT("EWidgetClipping::"));
+    OutText += IndentStr + FString::Printf(TEXT("    - Clipping Mode: %s\n"), *ClippingStr);
+
+    float Opacity = Throbber->GetRenderOpacity();
+    if (Opacity < 1.0f - KINDA_SMALL_NUMBER)
+    {
+        OutText += IndentStr + FString::Printf(TEXT("    - Render Opacity: %.2f\n"), Opacity);
+    }
+
+    OutText += IndentStr + TEXT("    - Type: Throbber (loading spinner)\n");
+
+    OutText += TEXT("\n");
+}
