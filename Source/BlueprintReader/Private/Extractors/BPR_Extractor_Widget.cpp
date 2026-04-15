@@ -101,7 +101,7 @@ BPR_Extractor_Widget::BPR_Extractor_Widget()
 {
     RecursionSettings.MaxDepth = 10;
     RecursionSettings.bRestrictDepth = true;
-}
+} //ToDo инициализируй ExtractorName = TEXT("Actor");
 BPR_Extractor_Widget::~BPR_Extractor_Widget() {}
 
 //==============================================================================
@@ -2896,7 +2896,7 @@ void BPR_Extractor_Widget::HandleSizeBoxProperties(USizeBox* SizeBox, FString& O
     OutText += IndentStr + FString::Printf(TEXT("    - Max Desired Height: %.1f\n"), 
         SizeBox->GetMaxDesiredHeight());
 
-    // Флаги управления размерами
+    // Флаги управления размерами - ToDo проверь не устарели ли прямые доступы к переменным
     OutText += IndentStr + FString::Printf(TEXT("    - bOverride_WidthOverride: %s\n"),
         SizeBox->bOverride_WidthOverride ? TEXT("True") : TEXT("False"));
 

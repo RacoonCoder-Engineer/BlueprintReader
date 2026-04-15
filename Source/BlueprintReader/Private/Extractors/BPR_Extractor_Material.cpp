@@ -20,7 +20,7 @@
 #include "Materials/MaterialExpressionConstant4Vector.h"
 #include "Materials/MaterialExpressionStaticSwitch.h"
 
-BPR_Extractor_Material::BPR_Extractor_Material() {}
+BPR_Extractor_Material::BPR_Extractor_Material() {} //ToDo инициализируй ExtractorName = TEXT("Actor");
 BPR_Extractor_Material::~BPR_Extractor_Material() {}
 
 void BPR_Extractor_Material::ProcessMaterial(UObject* SelectedObject, FBPR_ExtractedData& OutData)

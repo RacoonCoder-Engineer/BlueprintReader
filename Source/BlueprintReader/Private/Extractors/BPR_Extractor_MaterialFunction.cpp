@@ -23,7 +23,7 @@
 #include "Materials/MaterialExpressionFunctionOutput.h"
 
 
-BPR_Extractor_MaterialFunction::BPR_Extractor_MaterialFunction() {}
+BPR_Extractor_MaterialFunction::BPR_Extractor_MaterialFunction() {} //ToDo инициализируй ExtractorName = TEXT("Actor");
 BPR_Extractor_MaterialFunction::~BPR_Extractor_MaterialFunction() {}
 
 void BPR_Extractor_MaterialFunction::ProcessMaterialFunction(UObject* SelectedObject, FBPR_ExtractedData& OutData)

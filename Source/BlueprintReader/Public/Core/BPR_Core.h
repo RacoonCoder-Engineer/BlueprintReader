@@ -8,6 +8,8 @@
 #include "Materials/Material.h"
 #include "Components/ActorComponent.h"
 
+BLUEPRINTREADER_API DECLARE_LOG_CATEGORY_EXTERN(LogBlueprintReader, Log, All);
+
 //---------------------------------------------------------------------- 
 //  Types of Assets Supported
 //---------------------------------------------------------------------- 
@@ -23,6 +25,7 @@ enum class EAssetType : uint8
     Structure,
     InterfaceBP
 };
+
 
 
 //---------------------------------------------------------------------- 

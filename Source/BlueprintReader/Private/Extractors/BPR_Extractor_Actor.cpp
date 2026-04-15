@@ -27,6 +27,12 @@
 #include "UObject/Package.h"
 
 //==============================================================================
+// Constructor / Destructor
+//==============================================================================
+BPR_Extractor_Actor::BPR_Extractor_Actor() {} //ToDo инициализируй ExtractorName = TEXT("Actor");
+BPR_Extractor_Actor::~BPR_Extractor_Actor() {}
+
+//==============================================================================
 // Helper functions for searching Entry/Result nodes
 //==============================================================================
 UK2Node_FunctionEntry* BPR_Extractor_Actor::FindFunctionEntryNodeInGraph(UEdGraph* Graph)
@@ -51,11 +57,7 @@ UK2Node_FunctionResult* BPR_Extractor_Actor::FindFunctionResultNodeInGraph(UEdGr
     return nullptr;
 }
 
-//==============================================================================
-// Constructor / Destructor
-//==============================================================================
-BPR_Extractor_Actor::BPR_Extractor_Actor() {}
-BPR_Extractor_Actor::~BPR_Extractor_Actor() {}
+
 
 //==============================================================================
 // Main entry point

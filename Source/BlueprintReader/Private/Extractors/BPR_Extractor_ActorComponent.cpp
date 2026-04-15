@@ -22,7 +22,7 @@
 #include "EdGraphSchema_K2.h"
 
 
-BPR_Extractor_ActorComponent::BPR_Extractor_ActorComponent() {}
+BPR_Extractor_ActorComponent::BPR_Extractor_ActorComponent() {} //ToDo инициализируй ExtractorName = TEXT("Actor");
 BPR_Extractor_ActorComponent::~BPR_Extractor_ActorComponent() {}
 
 //---------------------------------------------
