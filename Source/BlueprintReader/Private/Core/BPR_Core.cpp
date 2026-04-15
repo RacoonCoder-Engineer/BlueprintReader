@@ -106,7 +106,7 @@ void BPR_Core::ExtractorSelector(UObject* Object)
         {
             UE_LOG(LogTemp, Log, TEXT("BPR_Core: Using Enum extractor"));
             BPR_Extractor_Enum Extractor;
-            Extractor.ProcessEnum(Object, TextData);
+            Extractor.Process(Object, TextData);
             break;
         }
         

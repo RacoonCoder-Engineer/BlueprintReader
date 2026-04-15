@@ -3,18 +3,17 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Core/BPR_Core.h"
+#include "Extractors/BPR_Extractor_Base.h"
 
-class BLUEPRINTREADER_API BPR_Extractor_Enum
+class BLUEPRINTREADER_API BPR_Extractor_Enum : public BPR_Extractor_Base
 {
 public:
 	BPR_Extractor_Enum();
-	~BPR_Extractor_Enum();
 
-	/** Main method: converts Enum to FBPR_ExtractedData */
-	void ProcessEnum(UObject* Object, FBPR_ExtractedData& OutData);
+	/** Main entry point used by BPR_Core */
+	virtual void Process(UObject* SelectedObject, FBPR_ExtractedData& OutData) override;
 
 private:
-	/** Assembling a list of Enum elements */
-	void AppendEnumEntries(UEnum* Enum, FString& OutText);
+	/** Appends list of all enum entries */
+	void AppendEnumEntries(UEnum* Enum, FString& OutText) const;
 };

@@ -129,6 +129,16 @@ BPR_Extractor_Base::BPR_Extractor_Base()
     // Derived classes should set ExtractorName in their constructor
 }
 
+void BPR_Extractor_Base::SetExtractorName(const FString& InName)
+{
+	ExtractorName = InName;
+}
+
+FString BPR_Extractor_Base::GetExtractorName() const
+{
+	return ExtractorName;
+}
+
 // ===================================================================
 // Formatting Helpers
 // ===================================================================
@@ -450,35 +460,38 @@ void BPR_Extractor_Base::AppendStructFields(FStructProperty* StructProp, FString
 
 	const FString IndentStr = GetIndent(Indent);
 
-	OutText += IndentStr + FString::Printf(TEXT("### Struct: %s\n"), *Struct->GetName());
-	OutText += IndentStr + TEXT("| Field | Type | Description |\n");
-	OutText += IndentStr + TEXT("|-------|------|-------------|\n");
+	OutText += IndentStr + FString::Printf(TEXT("### Struct: %s\n\n"), *Struct->GetName());
+	
+	BeginMarkdownTable(OutText, { TEXT("Field"), TEXT("Type"), TEXT("Description") }, Indent);
 
 	for (TFieldIterator<FProperty> FieldIt(Struct); FieldIt; ++FieldIt)
 	{
 		FProperty* Field = *FieldIt;
-		if (!Field)
-		{
-			continue;
-		}
+		if (!Field) continue;
 
 		FString FieldName = CleanName(Field->GetName());
 		FString FieldType = GetPropertyTypeDetailed(Field);
+		FString Description = GetPropertyDescription(Field);
 
-		FString Desc = Field->GetToolTipText().ToString();
-		Desc.ReplaceInline(TEXT("\r\n"), TEXT(" "));
-		Desc.ReplaceInline(TEXT("\n"), TEXT(" "));
-		Desc.TrimStartAndEndInline();
-
-		OutText += IndentStr + FString::Printf(
-			TEXT("| %s | %s | %s |\n"),
-			*FieldName,
-			*FieldType,
-			Desc.IsEmpty() ? TEXT("-") : *Desc
-		);
+		AppendTableRow(OutText, { FieldName, FieldType, Description }, Indent);
 	}
 
-	OutText += IndentStr + TEXT("\n");
+	OutText += TEXT("\n");
+}
+
+FString BPR_Extractor_Base::GetPropertyDescription(FProperty* Property) const
+{
+	if (!Property)
+	{
+		return TEXT("-");
+	}
+
+	FString Desc = Property->GetToolTipText().ToString();
+	Desc.ReplaceInline(TEXT("\r\n"), TEXT(" "));
+	Desc.ReplaceInline(TEXT("\n"), TEXT(" "));
+	Desc.TrimStartAndEndInline();
+
+	return Desc.IsEmpty() ? TEXT("-") : Desc;
 }
 
 // ===================================================================
@@ -1160,9 +1173,7 @@ void BPR_Extractor_Base::AppendVariables(UBlueprint* Blueprint, FString& OutText
 		return;
 	}
 
-	OutText += TEXT("## Custom Variables\n");
-	OutText += TEXT("| Name | Type | Default Value | Flags | Category | Description |\n");
-	OutText += TEXT("|------|------|---------------|-------|----------|-------------|\n");
+	AppendSectionHeader(OutText, TEXT("Custom Variables"));
 
 	UClass* Class = Blueprint->GeneratedClass;
 	UObject* CDO = Class->GetDefaultObject();
@@ -1170,6 +1181,16 @@ void BPR_Extractor_Base::AppendVariables(UBlueprint* Blueprint, FString& OutText
 	{
 		return;
 	}
+
+	// Table Headers
+	BeginMarkdownTable(OutText, {
+		TEXT("Name"),
+		TEXT("Type"),
+		TEXT("Default Value"),
+		TEXT("Flags"),
+		TEXT("Category"),
+		TEXT("Description")
+	});
 
 	for (TFieldIterator<FProperty> PropIt(Class, EFieldIteratorFlags::ExcludeSuper); PropIt; ++PropIt)
 	{
@@ -1182,9 +1203,7 @@ void BPR_Extractor_Base::AppendVariables(UBlueprint* Blueprint, FString& OutText
 		FString PropName     = CleanName(Property->GetName());
 		FString PropType     = GetPropertyTypeDetailed(Property);
 		FString DefaultVal   = GetPropertyDefaultValue(Property, CDO);
-		FString Description  = Property->GetToolTipText().ToString()
-			.Replace(TEXT("\n"), TEXT(" "))
-			.Replace(TEXT("\r"), TEXT(""));
+		FString Description  = GetPropertyDescription(Property);
 		FString Category     = Property->GetMetaData(TEXT("Category"));
 
 		// Build flags string
@@ -1195,18 +1214,22 @@ void BPR_Extractor_Base::AppendVariables(UBlueprint* Blueprint, FString& OutText
 		if (Property->HasAnyPropertyFlags(CPF_BlueprintAssignable)) Flags += TEXT("Assignable ");
 		Flags.TrimEndInline();
 
-		OutText += FString::Printf(TEXT("| %s | %s | %s | %s | %s | %s |\n"),
-			*PropName,
-			*PropType,
-			*DefaultVal,
-			Flags.IsEmpty() ? TEXT("-") : *Flags,
-			Category.IsEmpty() ? TEXT("-") : *Category,
-			Description.IsEmpty() ? TEXT("-") : *Description);
+		if (Flags.IsEmpty()) Flags = TEXT("-");
+		if (Category.IsEmpty()) Category = TEXT("-");
+
+		AppendTableRow(OutText, {
+			PropName,
+			PropType,
+			DefaultVal,
+			Flags,
+			Category,
+			Description
+		});
 
 		// Expand nested structs
 		if (FStructProperty* StructProp = CastField<FStructProperty>(Property))
 		{
-			OutText += FString::Printf(TEXT("\n### Struct: %s\n"), *PropName);
+			OutText += TEXT("\n");
 			AppendStructFields(StructProp, OutText);
 		}
 	}
@@ -1259,5 +1282,70 @@ void BPR_Extractor_Base::AppendReplicationInfo(UClass* Class, FString& OutText) 
 		OutText += TEXT("- None\n");
 	}
 
+	OutText += TEXT("\n");
+}
+
+// ===================================================================
+// Table Helpers (Markdown)
+// ===================================================================
+
+void BPR_Extractor_Base::BeginMarkdownTable(FString& OutText, const TArray<FString>& Headers, int32 Indent /*= 0*/) const
+{
+	if (Headers.Num() == 0)
+	{
+		return;
+	}
+
+	const FString IndentStr = GetIndent(Indent);
+
+	// Header row
+	OutText += IndentStr;
+	for (int32 i = 0; i < Headers.Num(); ++i)
+	{
+		OutText += Headers[i];
+		if (i < Headers.Num() - 1)
+		{
+			OutText += TEXT(" | ");
+		}
+	}
+	OutText += TEXT("\n");
+
+	// Separator row with proper alignment (default: left aligned)
+	OutText += IndentStr;
+	for (int32 i = 0; i < Headers.Num(); ++i)
+	{
+		// Можно позже добавить параметр для выравнивания: ":---", "---:", ":---:"
+		OutText += TEXT(":---");
+		if (i < Headers.Num() - 1)
+		{
+			OutText += TEXT(" | ");
+		}
+	}
+	OutText += TEXT("\n");
+}
+
+void BPR_Extractor_Base::AppendTableRow(FString& OutText, const TArray<FString>& Columns, int32 Indent /*= 0*/) const
+{
+	if (Columns.Num() == 0)
+	{
+		return;
+	}
+
+	const FString IndentStr = GetIndent(Indent);
+
+	OutText += IndentStr;
+	for (int32 i = 0; i < Columns.Num(); ++i)
+	{
+		// Экранируем вертикальную черту внутри ячейки, если она есть
+		FString Cell = Columns[i];
+		Cell.ReplaceInline(TEXT("|"), TEXT("\\|"));
+
+		OutText += Cell;
+
+		if (i < Columns.Num() - 1)
+		{
+			OutText += TEXT(" | ");
+		}
+	}
 	OutText += TEXT("\n");
 }
