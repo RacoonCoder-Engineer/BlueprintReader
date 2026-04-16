@@ -29,8 +29,8 @@ void BPR_Extractor_Enum::Process(UObject* SelectedObject, FBPR_ExtractedData& Ou
 	AppendSectionHeader(StructureText, TEXT("ENUM"));
 
 	StructureText += FString::Printf(TEXT("**Name:** %s\n"), *Enum->GetName());
-
-	FString EnumDescription = Enum->GetDisplayNameText().ToString();
+	
+	FString EnumDescription = Enum->GetToolTipText().ToString();
 	if (!EnumDescription.IsEmpty() && EnumDescription != Enum->GetName())
 	{
 		StructureText += FString::Printf(TEXT("**Description:** %s\n"), *EnumDescription);
@@ -41,11 +41,11 @@ void BPR_Extractor_Enum::Process(UObject* SelectedObject, FBPR_ExtractedData& Ou
 	AppendSectionHeader(StructureText, TEXT("Enumerators"));
 
 	BeginMarkdownTable(StructureText, {
-		TEXT("Index"),
-		TEXT("Name"),
-		TEXT("Value"),
-		TEXT("Description")
-	});
+	TEXT("Index"),
+	TEXT("Name"),
+	TEXT("Value"),
+	TEXT("Description")
+}, 0, true);
 
 	AppendEnumEntries(Enum, StructureText);
 

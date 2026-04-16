@@ -100,10 +100,20 @@ protected:
     // Table Helpers (Markdown)
     // ===================================================================
 
-    /** Begins a markdown table with specified headers */
-    static void BeginMarkdownTable(FString& OutText, const TArray<FString>& Headers, int32 Indent = 0);
+    /**
+ * Begins a markdown table with specified headers.
+ * 
+ * @param OutText       Output string to append to
+ * @param Headers       Array of column headers
+ * @param Indent        Indentation level
+ * @param bBoldHeaders  If true, headers will be wrapped in **bold** markdown
+ */
+    static void BeginMarkdownTable(FString& OutText, 
+                                   const TArray<FString>& Headers, 
+                                   int32 Indent = 0, 
+                                   bool bBoldHeaders = true);
 
-    /** Appends a single row to the currently active markdown table */
+    /** Appends a single row to the currently active Markdown table */
     static void AppendTableRow(FString& OutText, const TArray<FString>& Columns, int32 Indent = 0);
         
     // ===================================================================

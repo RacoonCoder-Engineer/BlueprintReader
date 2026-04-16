@@ -1288,7 +1288,10 @@ void BPR_Extractor_Base::AppendReplicationInfo(const UClass* Class, FString& Out
 // Table Helpers (Markdown)
 // ===================================================================
 
-void BPR_Extractor_Base::BeginMarkdownTable(FString& OutText, const TArray<FString>& Headers, int32 Indent /*= 0*/)
+void BPR_Extractor_Base::BeginMarkdownTable(FString& OutText, 
+											const TArray<FString>& Headers, 
+											int32 Indent /*= 0*/, 
+											bool bBoldHeaders /*= true*/)
 {
 	if (Headers.Num() == 0)
 	{
@@ -1297,11 +1300,19 @@ void BPR_Extractor_Base::BeginMarkdownTable(FString& OutText, const TArray<FStri
 
 	const FString IndentStr = GetIndent(Indent);
 
-	// Header row
+	// Header row with optional bold
 	OutText += IndentStr;
 	for (int32 i = 0; i < Headers.Num(); ++i)
 	{
-		OutText += Headers[i];
+		if (bBoldHeaders)
+		{
+			OutText += TEXT("**") + Headers[i] + TEXT("**");
+		}
+		else
+		{
+			OutText += Headers[i];
+		}
+
 		if (i < Headers.Num() - 1)
 		{
 			OutText += TEXT(" | ");
