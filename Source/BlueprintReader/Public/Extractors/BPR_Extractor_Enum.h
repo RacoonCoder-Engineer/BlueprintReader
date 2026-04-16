@@ -14,6 +14,6 @@ public:
 	virtual void Process(UObject* SelectedObject, FBPR_ExtractedData& OutData) override;
 
 private:
-	/** Appends list of all enum entries */
-	void AppendEnumEntries(UEnum* Enum, FString& OutText) const;
+	/** Appends list of all enum entries as a markdown table */
+	static void AppendEnumEntries(const UEnum* Enum, FString& OutText);
 };

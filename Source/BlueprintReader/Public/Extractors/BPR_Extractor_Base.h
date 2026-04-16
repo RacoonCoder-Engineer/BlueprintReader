@@ -52,7 +52,7 @@ protected:
     // ===================================================================
     virtual void AppendBlueprintInfo(UBlueprint* Blueprint, FString& OutText) const;
     virtual void AppendVariables(UBlueprint* Blueprint, FString& OutText) const;
-    virtual void AppendReplicationInfo(UClass* Class, FString& OutText) const;
+    static void AppendReplicationInfo(const UClass* Class, FString& OutText);
 
     // ===================================================================
     // Property Helpers
@@ -61,7 +61,7 @@ protected:
     virtual FString GetPropertyTypeDetailed(FProperty* Property) const;
     virtual void AppendStructFields(FStructProperty* StructProp, FString& OutText, int32 Indent = 0) const;
     virtual bool IsUserVariable(FProperty* Property) const;
-    FString GetPropertyDescription(FProperty* Property) const;
+    static FString GetPropertyDescription(const FProperty* Property);
 
     // ===================================================================
     // Graph Processing
@@ -101,10 +101,10 @@ protected:
     // ===================================================================
 
     /** Begins a markdown table with specified headers */
-    void BeginMarkdownTable(FString& OutText, const TArray<FString>& Headers, int32 Indent = 0) const;
+    static void BeginMarkdownTable(FString& OutText, const TArray<FString>& Headers, int32 Indent = 0);
 
     /** Appends a single row to the currently active markdown table */
-    void AppendTableRow(FString& OutText, const TArray<FString>& Columns, int32 Indent = 0) const;
+    static void AppendTableRow(FString& OutText, const TArray<FString>& Columns, int32 Indent = 0);
         
     // ===================================================================
     // Utilities

@@ -5,62 +5,85 @@
 
 BPR_Extractor_Enum::BPR_Extractor_Enum()
 {
-    // Set short name for logging
-    SetExtractorName(TEXT("Enum"));
+	SetExtractorName(TEXT("Enum"));
 }
 
 void BPR_Extractor_Enum::Process(UObject* SelectedObject, FBPR_ExtractedData& OutData)
 {
-    FString StructureText;
-    FString GraphText = TEXT("## Graphs\n\nThis asset type has no graphs.\n");
+	FString StructureText;
+	FString GraphText = TEXT("## Graphs\n\nThis asset type has no graphs.\n");
 
-    UEnum* Enum = Cast<UEnum>(SelectedObject);
-    if (!Enum)
-    {
-        StructureText = TEXT("Error: Object is not a valid UEnum.");
-        OutData.Structure = FText::FromString(StructureText);
-        OutData.Graph     = FText::FromString(GraphText);
-        OutData.Design    = FText::FromString(TEXT("N/A"));
-        OutData.AssetType = EAssetType::Enum;
-        return;
-    }
+	UEnum* Enum = Cast<UEnum>(SelectedObject);
+	if (!Enum)
+	{
+		StructureText = TEXT("Error: Object is not a valid UEnum.");
+		
+		OutData.Structure = FText::FromString(StructureText);
+		OutData.Graph     = FText::FromString(GraphText);
+		OutData.Design    = FText::FromString(TEXT("N/A"));
+		OutData.AssetType = EAssetType::Enum;
+		return;
+	}
 
-    // === Structure Section ===
-    AppendSectionHeader(StructureText, TEXT("Enum"));
-    StructureText += FString::Printf(TEXT("**Name:** %s\n\n"), *Enum->GetName());
+	// Structure Section
+	AppendSectionHeader(StructureText, TEXT("ENUM"));
 
-    AppendEnumEntries(Enum, StructureText);
+	StructureText += FString::Printf(TEXT("**Name:** %s\n"), *Enum->GetName());
 
-    OutData.Structure = FText::FromString(StructureText);
-    OutData.Graph     = FText::FromString(GraphText);
-    OutData.Design    = FText::FromString(TEXT("N/A"));        // Enums have no Design
-    OutData.AssetType = EAssetType::Enum;
+	FString EnumDescription = Enum->GetDisplayNameText().ToString();
+	if (!EnumDescription.IsEmpty() && EnumDescription != Enum->GetName())
+	{
+		StructureText += FString::Printf(TEXT("**Description:** %s\n"), *EnumDescription);
+	}
+	StructureText += TEXT("\n");
+
+	// Enumerators Table
+	AppendSectionHeader(StructureText, TEXT("Enumerators"));
+
+	BeginMarkdownTable(StructureText, {
+		TEXT("Index"),
+		TEXT("Name"),
+		TEXT("Value"),
+		TEXT("Description")
+	});
+
+	AppendEnumEntries(Enum, StructureText);
+
+	OutData.Structure = FText::FromString(StructureText);
+	OutData.Graph     = FText::FromString(GraphText);
+	OutData.Design    = FText::FromString(TEXT("N/A"));
+	OutData.AssetType = EAssetType::Enum;
 }
 
-void BPR_Extractor_Enum::AppendEnumEntries(UEnum* Enum, FString& OutText) const
+void BPR_Extractor_Enum::AppendEnumEntries(const UEnum* Enum, FString& OutText)
 {
-    if (!Enum)
-    {
-        return;
-    }
+	if (!Enum)
+	{
+		return;
+	}
 
-    const int32 NumEnums = Enum->NumEnums();
+	// Eliminate the artificial _MAX element
+	const int32 Num = Enum->NumEnums() - 1;
 
-    for (int32 i = 0; i < NumEnums; ++i)
-    {
-        FString Name       = Enum->GetNameStringByIndex(i);
-        int64   Value      = Enum->GetValueByIndex(i);
-        FString DisplayName = Enum->GetDisplayNameTextByIndex(i).ToString();
+	for (int32 i = 0; i < Num; ++i)
+	{
+		FString Name        = Enum->GetNameStringByIndex(i);
+		int64   Value       = Enum->GetValueByIndex(i);
+		FString Description = Enum->GetToolTipTextByIndex(i).ToString();
 
-        // Clean up display name if it's the same as the name
-        if (DisplayName.IsEmpty() || DisplayName == Name)
-        {
-            DisplayName = TEXT("-");
-        }
+		// If the description is empty, put "-"
+		if (Description.IsEmpty())
+		{
+			Description = TEXT("-");
+		}
 
-        OutText += FString::Printf(TEXT("%d) %s = %lld    %s\n"),
-            i, *Name, Value, *DisplayName);
-    }
+		AppendTableRow(OutText, {
+			FString::FromInt(i),           // Index
+			Name,                          // Name
+			FString::Printf(TEXT("%lld"), Value), // Value
+			Description                    // Description
+		});
+	}
 
-    OutText += TEXT("\n");
+	OutText += TEXT("\n");
 }
