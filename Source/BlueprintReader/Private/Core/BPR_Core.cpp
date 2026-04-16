@@ -114,7 +114,7 @@ void BPR_Core::ExtractorSelector(UObject* Object)
         {
             UE_LOG(LogTemp, Log, TEXT("BPR_Core: Using Structure extractor"));
             BPR_Extractor_Structure Extractor;
-            Extractor.ProcessStructure(Object, TextData);
+            Extractor.Process(Object, TextData);
             break;
         }
         

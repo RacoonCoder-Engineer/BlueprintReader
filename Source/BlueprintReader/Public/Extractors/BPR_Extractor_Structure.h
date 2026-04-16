@@ -3,21 +3,20 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Core/BPR_Core.h"
+#include "Extractors/BPR_Extractor_Base.h"
 
 /**
- * Extractor for structures (UScriptStruct)
+ * Extractor for UScriptStruct (structures)
  */
-class BLUEPRINTREADER_API BPR_Extractor_Structure
+class BLUEPRINTREADER_API BPR_Extractor_Structure : public BPR_Extractor_Base
 {
 public:
 	BPR_Extractor_Structure();
-	~BPR_Extractor_Structure();
 
-	/** Basic method of extracting data from a structure */
-	void ProcessStructure(UObject* Object, FBPR_ExtractedData& OutData);
+	/** Main entry point used by BPR_Core */
+	virtual void Process(UObject* SelectedObject, FBPR_ExtractedData& OutData) override;
 
 private:
-	/** Helps generate Markdown text for a specific UScriptStruct */
-	void AppendStructInfo(UScriptStruct* Struct, FString& OutText);
+	/** Appends detailed information about the structure fields as a Markdown table */
+	void AppendStructInfo(const UScriptStruct* Struct, FString& OutText) const;
 };

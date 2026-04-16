@@ -2,80 +2,87 @@
 
 #include "Extractors/BPR_Extractor_Structure.h"
 #include "UObject/UnrealType.h"
-#include "UObject/StructOnScope.h"
 
 BPR_Extractor_Structure::BPR_Extractor_Structure()
 {
+	SetExtractorName(TEXT("Structure"));
 }
 
-BPR_Extractor_Structure::~BPR_Extractor_Structure()
+void BPR_Extractor_Structure::Process(UObject* SelectedObject, FBPR_ExtractedData& OutData)
 {
-}
+	FString StructureText;
+	FString GraphText = TEXT("## Graphs\n\nThis asset type has no graphs.\n");
 
-void BPR_Extractor_Structure::ProcessStructure(UObject* Object, FBPR_ExtractedData& OutData)
-{
-#if WITH_EDITOR
-	FString Result;
-
-	if (!Object)
+	UScriptStruct* Struct = Cast<UScriptStruct>(SelectedObject);
+	if (!Struct)
 	{
-		OutData.Structure = FText::FromString(TEXT("Object is null."));
-		OutData.Graph     = FText::FromString(TEXT("N/A"));
-		return;
-	}
-
-	// If the object is already a UScriptStruct, use it
-	if (UScriptStruct* StructObj = Cast<UScriptStruct>(Object))
-	{
-		AppendStructInfo(StructObj, Result);
-	}
-	else
-	{
-		// In other cases, let's try to find the structure in the metadata of the class (if necessary) 
-		// old code tried to take SuperStruct from a class - let's leave the same logic
-		if (UClass* Class = Object->GetClass())
+		// Try to get the struct from the object's class if it's not a direct UScriptStruct
+		if (SelectedObject)
 		{
-			UStruct* SuperStruct = Class->GetSuperStruct();
-			if (SuperStruct)
-			{
-				AppendStructInfo(Cast<UScriptStruct>(SuperStruct), Result);
-			}
+			Struct = Cast<UScriptStruct>(SelectedObject->GetClass()->GetSuperStruct());
 		}
 	}
 
-	if (Result.IsEmpty())
+	if (!Struct)
 	{
-		Result = TEXT("No structure info available.");
+		StructureText = TEXT("Error: Object is not a valid UScriptStruct.");
+		
+		OutData.Structure = FText::FromString(StructureText);
+		OutData.Graph     = FText::FromString(GraphText);
+		OutData.Design    = FText::FromString(TEXT("N/A"));
+		OutData.AssetType = EAssetType::Structure;
+		return;
 	}
 
-	OutData.Structure = FText::FromString(Result);
-	OutData.Graph     = FText::FromString(TEXT("N/A")); // Structures don't have graphs
-#else
-	OutData.Structure = FText::FromString(TEXT("Structure extraction available only in editor builds."));
-	OutData.Graph     = FText::FromString(TEXT("N/A"));
-#endif
+	// Structure Section
+	AppendSectionHeader(StructureText, TEXT("STRUCTURE"));
+
+	StructureText += FString::Printf(TEXT("**Name:** %s\n"), *Struct->GetName());
+
+	FString StructDescription = Struct->GetToolTipText().ToString();
+	if (!StructDescription.IsEmpty())
+	{
+		StructureText += FString::Printf(TEXT("**Description:** %s\n"), *StructDescription);
+	}
+	StructureText += TEXT("\n");
+
+	// Fields Table
+	AppendSectionHeader(StructureText, TEXT("Fields"));
+
+	BeginMarkdownTable(StructureText, {
+		TEXT("Field"),
+		TEXT("Type"),
+		TEXT("Description")
+	});
+
+	AppendStructInfo(Struct, StructureText);
+
+	OutData.Structure = FText::FromString(StructureText);
+	OutData.Graph     = FText::FromString(GraphText);
+	OutData.Design    = FText::FromString(TEXT("N/A"));
+	OutData.AssetType = EAssetType::Structure;
 }
 
-void BPR_Extractor_Structure::AppendStructInfo(UScriptStruct* Struct, FString& OutText)
+void BPR_Extractor_Structure::AppendStructInfo(const UScriptStruct* Struct, FString& OutText) const
 {
 	if (!Struct)
+	{
 		return;
-
-	OutText += FString::Printf(TEXT("# Structure: %s\n\n"), *Struct->GetName());
-
-	OutText += TEXT("## Fields\n\n");
+	}
 
 	for (TFieldIterator<FProperty> It(Struct); It; ++It)
 	{
 		FProperty* Property = *It;
 		if (!Property)
+		{
 			continue;
+		}
 
-		// Name and type remain as in the old implementation
-		FString PropName = Property->GetNameCPP();
-		FString PropType = Property->GetClass()->GetName();
+		FString FieldName   = CleanName(Property->GetName());
+		FString FieldType   = GetPropertyTypeDetailed(Property);
+		FString Description = GetPropertyDescription(Property);
 
-		OutText += FString::Printf(TEXT("- **%s** : %s\n"), *PropName, *PropType);
+		AppendTableRow(OutText, { FieldName, FieldType, Description });
 	}
 
 	OutText += TEXT("\n");
