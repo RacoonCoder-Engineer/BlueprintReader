@@ -1,94 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
-
-//TODO
-// Что нужно будет сделать в потомках
-// В конструкторах потомков просто задавать имя:
-// Пример для Actor:
-// C++BPR_Extractor_Actor::BPR_Extractor_Actor()
-//     : BPR_Extractor_Base()
-// {
-//     ExtractorName = TEXT("Actor");
-// }
-// Для Widget:
-// C++BPR_Extractor_Widget::BPR_Extractor_Widget()
-//     : BPR_Extractor_Base()
-// {
-//     ExtractorName = TEXT("Widget");
-// }
-// Для Material:
-// C++BPR_Extractor_Material::BPR_Extractor_Material()
-//     : BPR_Extractor_Base()
-// {
-//     ExtractorName = TEXT("Material");
-// }
-// FString BPR_Extractor_Widget::GetPropertyTypeDetailed(FProperty* Property) const
-// {
-//     FString BaseType = Super::GetPropertyTypeDetailed(Property);
-//
-//     // Здесь можно добавить дополнительные UMG-специфичные улучшения,
-//     // если базовой версии будет недостаточно
-//
-//     return BaseType;
-// }
-//
-// В BPR_Extractor_Widget (позже) сделаем override:
-// C++FString BPR_Extractor_Widget::GetPropertyTypeDetailed(FProperty* Property) const
-// {
-//     FString BaseType = Super::GetPropertyTypeDetailed(Property);
-//
-//     // Дополнительные красивые названия только для UMG
-//     if (BaseType == TEXT("FSlateColor"))     return TEXT("FSlateColor");
-//     if (BaseType == TEXT("FMargin"))         return TEXT("FMargin (Padding)");
-//     if (BaseType == TEXT("FAnchors"))        return TEXT("FAnchors");
-//     if (BaseType == TEXT("FWidgetTransform")) return TEXT("FWidgetTransform");
-//     if (BaseType == TEXT("ETextJustify::Type")) return TEXT("ETextJustify");
-//
-//     return BaseType;
-// }
-//
-// Что делать с Widget потом
-// Когда будем подключать BPR_Extractor_Widget, ты сможешь сделать красивый override:
-// C++FString BPR_Extractor_Widget::GetPropertyDefaultValue(FProperty* Property, UObject* Object) const
-// {
-//     // Специальная обработка структур UMG
-//     if (FStructProperty* StructProp = CastField<FStructProperty>(Property))
-//     {
-//         FName StructName = StructProp->Struct->GetFName();
-//
-//         if (StructName == FName("SlateColor") || StructName == FName("LinearColor"))
-//         {
-//             // ... твоя красивая обработка цвета
-//         }
-//         else if (StructName == FName("Margin"))
-//         {
-//             // ... красивая обработка Margin
-//         }
-//         // и т.д.
-//     }
-//
-//     // Если специальная обработка не сработала — падаем обратно на базовую версию
-//     return Super::GetPropertyDefaultValue(Property, Object);
-// }
-// Когда будем подключать BPR_Extractor_Widget, ты сможешь сделать:
-// C++void BPR_Extractor_Widget::AppendStructFields(...) const
-// {
-//     // Если нужно — меняем заголовок или добавляем что-то специфичное
-//     Super::AppendStructFields(StructProp, OutText, Indent);
-// }
-// (Пока override не обязателен — базовая версия уже достаточно хороша.)
-//
-// Для Widget в будущем
-// Ты можешь сделать override примерно так:
-// C++void BPR_Extractor_Widget::AppendBlueprintInfo(UBlueprint* Blueprint, FString& OutText) const
-// {
-//     Super::AppendBlueprintInfo(Blueprint, OutText);
-//
-//     // Дополнительная информация только для Widget
-//     OutText += TEXT("Widget Type: UMG Widget\n");
-//     // или что-то ещё специфичное
-// }
-
+// Copyright (c) 2026 Racoon Coder. All rights reserved.
 #include "Extractors/BPR_Extractor_Base.h"
 
 #include "Engine/Blueprint.h"
@@ -526,7 +436,7 @@ FString BPR_Extractor_Base::GetPinDisplayName(const UEdGraphPin* Pin)
 	return TEXT("Unknown");
 }
 
-FString BPR_Extractor_Base::GetPinDetails(const UEdGraphPin* Pin)
+FString BPR_Extractor_Base::GetPinDetails(const UEdGraphPin* Pin) const
 {
 	if (!Pin)
 	{
@@ -550,7 +460,7 @@ FString BPR_Extractor_Base::GetPinDetails(const UEdGraphPin* Pin)
 	return TEXT("default");
 }
 
-FString BPR_Extractor_Base::GetReadableNodeName(const UEdGraphNode* Node)
+FString BPR_Extractor_Base::GetReadableNodeName(const UEdGraphNode* Node) const
 {
 	if (!Node)
 	{
@@ -566,7 +476,7 @@ FString BPR_Extractor_Base::GetReadableNodeName(const UEdGraphNode* Node)
 		}
 	}
 
-	// Event node (BeginPlay, OnClicked, etc.)
+	// Standard Events (BeginPlay, Tick, OnClicked, etc.)
 	if (const UK2Node_Event* EventNode = Cast<UK2Node_Event>(Node))
 	{
 		FName EventName = EventNode->EventReference.GetMemberName();
@@ -587,16 +497,14 @@ FString BPR_Extractor_Base::GetReadableNodeName(const UEdGraphNode* Node)
 		return FString::Printf(TEXT("Set %s"), *VarSet->VariableReference.GetMemberName().ToString());
 	}
 
-	// Call Function (most common case)
+	// Call Function
 	if (const UK2Node_CallFunction* CallFunc = Cast<UK2Node_CallFunction>(Node))
 	{
 		FString Params;
 		for (UEdGraphPin* Pin : CallFunc->Pins)
 		{
 			if (!Pin || Pin->Direction != EGPD_Input || Pin->PinType.PinCategory == UEdGraphSchema_K2::PC_Exec)
-			{
 				continue;
-			}
 
 			Params += FString::Printf(TEXT("%s=%s "), *Pin->PinName.ToString(), *GetPinDetails(Pin));
 		}
@@ -606,7 +514,7 @@ FString BPR_Extractor_Base::GetReadableNodeName(const UEdGraphNode* Node)
 		return FString::Printf(TEXT("Call %s(%s)"), *FuncName, *Params);
 	}
 
-	// Control flow nodes
+	// Control flow
 	if (const UK2Node_IfThenElse* Branch = Cast<UK2Node_IfThenElse>(Node))
 	{
 		return FString::Printf(TEXT("If %s"), *GetPinDetails(Branch->GetConditionPin()));
@@ -624,7 +532,7 @@ FString BPR_Extractor_Base::GetReadableNodeName(const UEdGraphNode* Node)
 	if (Node->IsA(UK2Node_FunctionResult::StaticClass()))   return TEXT("Function Result");
 	if (Node->IsA(UK2Node_ComponentBoundEvent::StaticClass())) return TEXT("Component Bound Event");
 
-	// Fallback to node title or raw name
+	// Fallback
 	FString Title = Node->GetNodeTitle(ENodeTitleType::FullTitle).ToString();
 	return Title.IsEmpty() ? Node->GetName() : Title;
 }
@@ -861,11 +769,11 @@ FString BPR_Extractor_Base::GetMacroSignature(const UEdGraph* Graph) const
 // ===================================================================
 
 void BPR_Extractor_Base::ProcessNodeSequence(
-	UEdGraphNode* Node,
-	int32 IndentLevel,
-	TSet<UEdGraphNode*>& Visited,
-	FString& OutExecText,
-	FString& OutDataText) const
+    UEdGraphNode* Node,
+    int32 IndentLevel,
+    TSet<UEdGraphNode*>& Visited,
+    FString& OutExecText,
+    FString& OutDataText) const
 {
 	if (!Node || Visited.Contains(Node))
 	{
@@ -886,7 +794,7 @@ void BPR_Extractor_Base::ProcessNodeSequence(
 		NodeTitle += FString::Printf(TEXT(" // %s"), *Node->NodeComment);
 	}
 
-	// Output node to the appropriate section
+	// Determine output section
 	if (HasExecInput(Node))
 	{
 		OutExecText += FString::Printf(TEXT("%*s- %s\n"),
@@ -903,22 +811,18 @@ void BPR_Extractor_Base::ProcessNodeSequence(
 			IndentLevel * 2, TEXT(""), *NodeTitle);
 	}
 
-	// Process data-flow connections (non-exec pins)
+	// 3. Data-flow (non-exec pins)
 	for (UEdGraphPin* Pin : Node->Pins)
 	{
 		if (!Pin || Pin->PinType.PinCategory == UEdGraphSchema_K2::PC_Exec)
-		{
 			continue;
-		}
 
 		FString PinName = GetPinDisplayName(Pin);
 
 		for (UEdGraphPin* LinkedTo : Pin->LinkedTo)
 		{
 			if (!LinkedTo || !LinkedTo->GetOwningNode())
-			{
 				continue;
-			}
 
 			FString TargetNodeName = GetReadableNodeName(LinkedTo->GetOwningNode());
 			FString TargetPinName = GetPinDisplayName(LinkedTo);
@@ -932,7 +836,7 @@ void BPR_Extractor_Base::ProcessNodeSequence(
 				(IndentLevel + 1) * 2, TEXT(""), *NodeTitle, *PinName,
 				*TargetNodeName, *TargetPinName);
 
-			// Recurse only into pure/computational nodes for data flow
+			// Recurse only into computational (pure) nodes for data flow
 			if (!Visited.Contains(LinkedTo->GetOwningNode()) &&
 				IsComputationalNode(LinkedTo->GetOwningNode()))
 			{
@@ -947,13 +851,11 @@ void BPR_Extractor_Base::ProcessNodeSequence(
 		}
 	}
 
-	// Process execution flow (exec pins)
+	// 4. Exec flow recursion
 	for (UEdGraphPin* Pin : Node->Pins)
 	{
 		if (!Pin || Pin->PinType.PinCategory != UEdGraphSchema_K2::PC_Exec)
-		{
 			continue;
-		}
 
 		FString Label = Pin->PinFriendlyName.IsEmpty() 
 			? TEXT("then") 
@@ -962,9 +864,7 @@ void BPR_Extractor_Base::ProcessNodeSequence(
 		for (UEdGraphPin* LinkedPin : Pin->LinkedTo)
 		{
 			if (!LinkedPin || !LinkedPin->GetOwningNode())
-			{
 				continue;
-			}
 
 			OutExecText += FString::Printf(TEXT("%*s  [%s] →\n"),
 				IndentLevel * 2, TEXT(""), *Label);
@@ -992,26 +892,39 @@ void BPR_Extractor_Base::AppendGraphSequence(
 
 	TSet<UEdGraphNode*> Visited;
 
-	// Find starting node (Function Entry preferred, otherwise first node)
+	// Try to find a good starting point
 	UEdGraphNode* StartNode = FindFunctionEntryNodeInGraph(Graph);
+
+	// For Event Graphs without FunctionEntry (common case), start from the first Event node
+	if (!StartNode)
+	{
+		for (UEdGraphNode* Node : Graph->Nodes)
+		{
+			if (Node && Node->IsA(UK2Node_Event::StaticClass()))
+			{
+				StartNode = Node;
+				break;
+			}
+		}
+	}
+
+	// Fallback to first node
 	if (!StartNode && !Graph->Nodes.IsEmpty())
 	{
 		StartNode = Graph->Nodes[0];
 	}
 
-	// Main traversal starting from entry point
+	// Main execution flow
 	if (StartNode)
 	{
 		ProcessNodeSequence(StartNode, 0, Visited, OutExecText, OutDataText);
 	}
 
-	// Handle pure/computational nodes that were not reached via execution flow
+	// Pure/computational nodes not reached by exec flow
 	for (UEdGraphNode* Node : Graph->Nodes)
 	{
 		if (!Node || Visited.Contains(Node) || !IsComputationalNode(Node))
-		{
 			continue;
-		}
 
 		FString NodeTitle = GetReadableNodeName(Node);
 		if (!Node->NodeComment.IsEmpty())
@@ -1022,22 +935,18 @@ void BPR_Extractor_Base::AppendGraphSequence(
 		OutDataText += FString::Printf(TEXT("[pure] %s (no exec)\n"), *NodeTitle);
 		Visited.Add(Node);
 
-		// Process data connections for this pure node
+		// Process data connections
 		for (UEdGraphPin* Pin : Node->Pins)
 		{
 			if (!Pin || Pin->PinType.PinCategory == UEdGraphSchema_K2::PC_Exec)
-			{
 				continue;
-			}
 
 			FString PinName = GetPinDisplayName(Pin);
 
 			for (UEdGraphPin* LinkedTo : Pin->LinkedTo)
 			{
 				if (!LinkedTo || !LinkedTo->GetOwningNode())
-				{
 					continue;
-				}
 
 				FString TargetNodeName = GetReadableNodeName(LinkedTo->GetOwningNode());
 				FString TargetPinName = GetPinDisplayName(LinkedTo);
@@ -1067,62 +976,111 @@ void BPR_Extractor_Base::AppendGraphSequence(
 
 void BPR_Extractor_Base::AppendGraphs(UBlueprint* Blueprint, FString& OutText) const
 {
+    if (!Blueprint)
+    {
+        return;
+    }
+
+    OutText += TEXT("## Graphs\n\n");
+
+    // === Construction Script ===
+    {
+        UEdGraph* ConstructionGraph = FindConstructionScriptGraph(Blueprint);
+
+        AppendSectionHeader(OutText, TEXT("Construction Script"));
+
+        if (ConstructionGraph)
+        {
+            FString ExecFlow, DataFlow;
+            AppendGraphSequence(ConstructionGraph, ExecFlow, DataFlow);
+            OutText += ExecFlow + DataFlow + TEXT("\n\n");
+        }
+        else
+        {
+            OutText += TEXT("No Construction Script defined.\n\n");
+        }
+    }
+
+    // === Event Graphs (UbergraphPages) ===
+    if (Blueprint->UbergraphPages.Num() > 0)
+    {
+        for (UEdGraph* Graph : Blueprint->UbergraphPages)
+        {
+            if (!Graph) continue;
+
+            FString GraphName = CleanName(Graph->GetName());
+            AppendSectionHeader(OutText, FString::Printf(TEXT("Event Graph: %s"), *GraphName));
+
+            FString ExecFlow, DataFlow;
+            AppendGraphSequence(Graph, ExecFlow, DataFlow);
+            OutText += ExecFlow + DataFlow + TEXT("\n\n");
+        }
+    }
+    else
+    {
+        OutText += TEXT("Note: No Event Graphs found.\n\n");
+    }
+
+    // === Function Graphs (кроме ConstructionScript) ===
+    for (UEdGraph* Graph : Blueprint->FunctionGraphs)
+    {
+        if (!Graph || Graph->GetName() == TEXT("ConstructionScript"))
+            continue;
+
+        FString Signature = GetFunctionSignature(Graph);
+        FString GraphName = CleanName(Graph->GetName());
+
+        OutText += FString::Printf(TEXT("### Function: %s\n- Signature: %s\n\n"),
+            *GraphName, *Signature);
+
+        FString ExecFlow, DataFlow;
+        AppendGraphSequence(Graph, ExecFlow, DataFlow);
+        OutText += ExecFlow + DataFlow + TEXT("\n\n");
+    }
+
+    // === Macro Graphs ===
+    for (UEdGraph* Graph : Blueprint->MacroGraphs)
+    {
+        if (!Graph) continue;
+
+        FString Signature = GetMacroSignature(Graph);
+        FString GraphName = CleanName(Graph->GetName());
+
+        OutText += FString::Printf(TEXT("### Macro: %s\n- Signature: %s\n\n"),
+            *GraphName, *Signature);
+
+        FString ExecFlow, DataFlow;
+        AppendGraphSequence(Graph, ExecFlow, DataFlow);
+        OutText += ExecFlow + DataFlow + TEXT("\n\n");
+    }
+}
+
+UEdGraph* BPR_Extractor_Base::FindConstructionScriptGraph(UBlueprint* Blueprint) const
+{
 	if (!Blueprint)
 	{
-		return;
+		return nullptr;
 	}
 
-	OutText += TEXT("## Graphs\n\n");
-
-	// Event Graphs (UbergraphPages)
-	if (Blueprint->UbergraphPages.Num() > 0)
-	{
-		for (UEdGraph* Graph : Blueprint->UbergraphPages)
-		{
-			if (!Graph) continue;
-
-			OutText += FString::Printf(TEXT("### Event Graph: %s\n"), *Graph->GetName());
-
-			FString ExecFlow, DataFlow;
-			AppendGraphSequence(Graph, ExecFlow, DataFlow);
-
-			OutText += ExecFlow + TEXT("\n") + DataFlow + TEXT("\n\n");
-		}
-	}
-	else
-	{
-		OutText += TEXT("Note: No Event Graph found.\n\n");
-	}
-
-	// Function Graphs
+	// Самый надёжный и актуальный способ в современных версиях UE
 	for (UEdGraph* Graph : Blueprint->FunctionGraphs)
 	{
-		if (!Graph) continue;
-
-		FString Signature = GetFunctionSignature(Graph);
-		FString ExecFlow, DataFlow;
-
-		OutText += FString::Printf(TEXT("### Function: %s\n- Signature: %s\n"),
-			*Graph->GetName(), *Signature);
-
-		AppendGraphSequence(Graph, ExecFlow, DataFlow);
-		OutText += ExecFlow + TEXT("\n") + DataFlow + TEXT("\n\n");
+		if (Graph && Graph->GetName() == TEXT("ConstructionScript"))
+		{
+			return Graph;
+		}
 	}
 
-	// Macro Graphs
-	for (UEdGraph* Graph : Blueprint->MacroGraphs)
+	// Fallback (на всякий случай, хотя в UE 5.4+ практически не нужен)
+	if (Blueprint->SimpleConstructionScript)
 	{
-		if (!Graph) continue;
-
-		FString Signature = GetMacroSignature(Graph);
-		FString ExecFlow, DataFlow;
-
-		OutText += FString::Printf(TEXT("### Macro: %s\n- Signature: %s\n"),
-			*Graph->GetName(), *Signature);
-
-		AppendGraphSequence(Graph, ExecFlow, DataFlow);
-		OutText += ExecFlow + TEXT("\n") + DataFlow + TEXT("\n\n");
+		// В старых версиях иногда граф лежал здесь, но сейчас это не используется
+		// Если в будущем Epic снова изменит поведение — можно будет доработать
+		UE_LOG(LogBlueprintReader, Verbose, TEXT("[%s] SimpleConstructionScript found, but no ConstructionScript graph in FunctionGraphs"), 
+			   *GetExtractorName());
 	}
+
+	return nullptr;
 }
 
 // ===================================================================
@@ -1179,8 +1137,6 @@ void BPR_Extractor_Base::AppendVariables(UBlueprint* Blueprint, FString& OutText
 		return;
 	}
 
-	AppendSectionHeader(OutText, TEXT("Custom Variables"));
-
 	UClass* Class = Blueprint->GeneratedClass;
 	UObject* CDO = Class->GetDefaultObject();
 	if (!CDO)
@@ -1188,44 +1144,74 @@ void BPR_Extractor_Base::AppendVariables(UBlueprint* Blueprint, FString& OutText
 		return;
 	}
 
-	// Table headers
+	// Collect all user variables
+	TArray<FProperty*> UserVariables;
+	for (TFieldIterator<FProperty> PropIt(Class, EFieldIteratorFlags::ExcludeSuper); PropIt; ++PropIt)
+	{
+		FProperty* Property = *PropIt;
+		if (Property && IsUserVariable(Property))
+		{
+			UserVariables.Add(Property);
+		}
+	}
+
+	if (UserVariables.Num() == 0)
+	{
+		AppendSectionHeader(OutText, TEXT("Custom Variables"));
+		OutText += TEXT("No custom variables defined.\n\n");
+		return;
+	}
+
+	AppendSectionHeader(OutText, TEXT("Custom Variables"));
+
+	// Wide table with important property flags
 	BeginMarkdownTable(OutText, {
 		TEXT("Name"),
 		TEXT("Type"),
 		TEXT("Default Value"),
-		TEXT("Flags"),
+		TEXT("Edit"),
+		TEXT("Visible"),
+		TEXT("ExposeOnSpawn"),
+		TEXT("InstanceEditable"),
+		TEXT("Private"),
+		TEXT("SaveGame"),
 		TEXT("Category"),
 		TEXT("Description")
 	});
 
-	for (TFieldIterator<FProperty> PropIt(Class, EFieldIteratorFlags::ExcludeSuper); PropIt; ++PropIt)
+	for (FProperty* Property : UserVariables)
 	{
-		FProperty* Property = *PropIt;
-		if (!Property || !IsUserVariable(Property))
-		{
-			continue;
-		}
+		FString PropName     = CleanName(Property->GetName());
+		FString PropType     = GetPropertyTypeDetailed(Property);
+		FString DefaultVal   = GetPropertyDefaultValue(Property, CDO);
+		FString Description  = GetPropertyDescription(Property);
+		FString Category     = Property->GetMetaData(TEXT("Category"));
 
-		FString PropName    = CleanName(Property->GetName());
-		FString PropType    = GetPropertyTypeDetailed(Property);
-		FString DefaultVal  = GetPropertyDefaultValue(Property, CDO);
-		FString Description = GetPropertyDescription(Property);     // static вызов
-		FString Category    = Property->GetMetaData(TEXT("Category"));
+		// Simple boolean flags for better readability
+		FString EditFlag         = Property->HasAnyPropertyFlags(CPF_Edit) ? TEXT("Yes") : TEXT("-");
+		FString VisibleFlag      = Property->HasAnyPropertyFlags(CPF_BlueprintVisible) ? TEXT("Yes") : TEXT("-");
+		FString ExposeOnSpawn    = Property->HasAnyPropertyFlags(CPF_ExposeOnSpawn) ? TEXT("Yes") : TEXT("-");
+		FString InstanceEditable = !Property->HasAnyPropertyFlags(CPF_DisableEditOnInstance) ? TEXT("Yes") : TEXT("-");
+		FString PrivateFlag      = Property->GetBoolMetaData(TEXT("Private")) ? TEXT("Yes") : TEXT("-");
+		FString SaveGameFlag     = Property->HasAnyPropertyFlags(CPF_SaveGame) ? TEXT("Yes") : TEXT("-");
 
-		// Forming flags
-		FString Flags;
-		if (Property->HasAnyPropertyFlags(CPF_Edit))                Flags += TEXT("Edit ");
-		if (Property->HasAnyPropertyFlags(CPF_BlueprintVisible))    Flags += TEXT("BlueprintVisible ");
-		if (Property->HasAnyPropertyFlags(CPF_BlueprintReadOnly))   Flags += TEXT("BlueprintReadOnly ");
-		if (Property->HasAnyPropertyFlags(CPF_BlueprintAssignable)) Flags += TEXT("Assignable ");
-		Flags.TrimEndInline();
+		if (Category.IsEmpty()) Category = TEXT("-");
 
-		if (Flags.IsEmpty())     Flags = TEXT("-");
-		if (Category.IsEmpty())  Category = TEXT("-");
+		AppendTableRow(OutText, {
+			PropName,
+			PropType,
+			DefaultVal,
+			EditFlag,
+			VisibleFlag,
+			ExposeOnSpawn,
+			InstanceEditable,
+			PrivateFlag,
+			SaveGameFlag,
+			Category,
+			Description
+		});
 
-		AppendTableRow(OutText, { PropName, PropType, DefaultVal, Flags, Category, Description });
-
-		// Expanding nested structures
+		// Expand nested structs
 		if (FStructProperty* StructProp = CastField<FStructProperty>(Property))
 		{
 			OutText += TEXT("\n");

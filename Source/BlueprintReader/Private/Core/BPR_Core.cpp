@@ -91,7 +91,7 @@ void BPR_Core::ExtractorSelector(UObject* Object)
         {
             UE_LOG(LogTemp, Log, TEXT("BPR_Core: Using Actor extractor"));
             BPR_Extractor_Actor Extractor;
-            Extractor.ProcessActor(Object, TextData);
+            Extractor.Process(Object, TextData);
             break;
         }
     case EAssetType::Widget:

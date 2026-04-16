@@ -3,134 +3,49 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Core/BPR_Core.h"
+#include "Extractors/BPR_Extractor_Base.h"
 
 // Forward declarations
 class UActorComponent;
-class UBlueprint;
-class UEdGraph;
-class UEdGraphNode;
-class UEdGraphPin;
-class K2Node_FunctionEntry;
-class K2Node_FunctionResult;
-
-class UK2Node_FunctionEntry;
-class UK2Node_FunctionResult;
+class AActor;
 
 /**
-* Extractor for Actor Blueprint.
-* Collects information about classes, technologies, components, tags, and graphs.
-* The result is returned to the core via FText.
-*/
-class BLUEPRINTREADER_API BPR_Extractor_Actor
+ * Extractor for Actor Blueprints (AActor derived classes).
+ * Handles class info, variables, components, tags, replication and graphs.
+ */
+class BLUEPRINTREADER_API BPR_Extractor_Actor : public BPR_Extractor_Base
 {
 public:
     BPR_Extractor_Actor();
-    ~BPR_Extractor_Actor();
 
-    // --------------------------------
-    // Main entry point
-    // -------------------------------
-    /** Processes the selected object (Blueprint), generates the structure and graph */
-    void ProcessActor(UObject* SelectedObject, FBPR_ExtractedData& OutData);
+    /** Main entry point used by BPR_Core */
+    virtual void Process(UObject* SelectedObject, FBPR_ExtractedData& OutData) override;
 
 private:
-    // ------------------------------- 
-    // Logging 
-    // -------------------------------
-    void LogMessage(const FString& Msg);
-    void LogWarning(const FString& Msg);
-    void LogError(const FString& Msg);
+    // ===================================================================
+    // Actor-specific Structure
+    // ===================================================================
 
-    // -------------------------------
-    // Working with the Blueprint structure
-    // -------------------------------
-    /** General information about the class (name, parent, placeable) */
-    void AppendClassInfo(UBlueprint* Blueprint, FString& OutText);
-    
-    /** General information about Blueprint */
-    void AppendBlueprintInfo(UBlueprint* Blueprint, FString& OutText);
-    
-    /** Information about replicated variables */
-    void AppendReplicationInfo(UClass* Class, FString& OutText);
+    /** Appends general class and Blueprint information */
+    void AppendClassInfo(UBlueprint* Blueprint, FString& OutText) const;
 
-    // -------------------------------
-    // Variables
-    // -------------------------------
-    /** Collection of user variables in table format */
-    void AppendVariables(UBlueprint* Blueprint, FString& OutText);
-    
-    /** Returns the default value of the property */
-    FString GetPropertyDefaultValue(FProperty* Property, UObject* Object);
-    
-    /** Returns the detailed type of the property */
-    FString GetPropertyTypeDetailed(FProperty* Property);
-    
-    /** Processes structural property fields and outputs their information */
-    void AppendStructFields(FStructProperty* StructProp, FString& OutText, int32 Indent = 0);
-    
-    /** Determines whether the property is a user variable */
-    bool IsUserVariable(FProperty* Property);
+    /** Appends information about Actor Components */
+    void AppendActorComponents(UBlueprint* Blueprint, FString& OutText) const;
 
-    // -------------------------------
-    // Components and Tags
-    // -------------------------------
-    /** Collecting information about actor components */
-    void AppendActorComponents(UBlueprint* Blueprint, FString& OutText);
-    
-    /** Collect actor tags */
-    void AppendActorTags(UBlueprint* Blueprint, FString& OutText);
-    
-    /** Formats information about the component */
-    FString FormatComponentInfo(UActorComponent* Component);
+    /** Appends Actor Tags */
+    void AppendActorTags(UBlueprint* Blueprint, FString& OutText) const;
 
-    // -------------------------------
-    // Working with Graphs
-    // -------------------------------
-    /** Main point for traversing all Blueprint graphs */
-    void AppendGraphs(UBlueprint* Blueprint, FString& OutText);
-    
-    /** Traverse a sequence of graph nodes (exec + data flow) */
-    void AppendGraphSequence(UEdGraph* Graph, FString& OutExecText, FString& OutDataText);
-    
-    /** Recursive processing of graph nodes */
-    void ProcessNodeSequence(
-        UEdGraphNode* Node, 
-        int32 IndentLevel, 
-        TSet<UEdGraphNode*>& Visited, 
-        FString& OutExecText, 
-        FString& OutDataText);
+    /** Formats component information for output */
+    FString FormatComponentInfo(UActorComponent* Component) const;
 
-    /** Finds the function entry node in the given graph */
-    UK2Node_FunctionEntry* FindFunctionEntryNodeInGraph(UEdGraph* Graph);
-    
-    /** Finds the function result node in the given graph */
-    UK2Node_FunctionResult* FindFunctionResultNodeInGraph(UEdGraph* Graph);
-    
-    /** Collect function signature by input/output pins */
-    FString GetFunctionSignature(UEdGraph* Graph);
-    
-    /** Collecting macro signatures from Tunnel nodes */
-    FString GetMacroSignature(UEdGraph* Graph);
+    // ===================================================================
+    // Graph Processing (Actor-specific overrides if needed)
+    // ===================================================================
 
-    // -------------------------------
-    // Helper methods for nodes and pins
-    // -------------------------------
-    /** Generates a human-readable node name */
-    FString GetReadableNodeName(UEdGraphNode* Node);
-    
-    /** Pin details (value or link) */
-    FString GetPinDetails(UEdGraphPin* Pin);
-    
-    /** Human-readable name of the pin */
-    FString GetPinDisplayName(UEdGraphPin* Pin);
-    
-    /** Strips the name of the GUID tail */
-    FString CleanName(const FString& RawName);
-    
-    /** Checks if the node is a compute (data-flow) node */
-    bool IsComputationalNode(UEdGraphNode* Node);
-    
-    /** Checks if the node has an Exec input */
-    bool HasExecInput(UEdGraphNode* Node);
+    /** Generates readable node name with Actor-specific enhancements */
+    FString GetReadableNodeName(UEdGraphNode* Node) const;
+
+    // Note: Most graph-related methods (AppendGraphs, ProcessNodeSequence, etc.)
+    // will be inherited from BPR_Extractor_Base. We only override if Actor needs
+    // special behavior.
 };

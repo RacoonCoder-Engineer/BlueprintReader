@@ -69,6 +69,14 @@ protected:
     virtual void AppendGraphs(UBlueprint* Blueprint, FString& OutText) const;
     virtual void AppendGraphSequence(const UEdGraph* Graph, FString& OutExecText, FString& OutDataText) const;
     virtual void ProcessNodeSequence(UEdGraphNode* Node, int32 IndentLevel, TSet<UEdGraphNode*>& Visited, FString& OutExecText, FString& OutDataText) const;
+    
+    /**
+     * Находит граф Construction Script в Blueprint.
+     * 
+     * @return Указатель на граф ConstructionScript, если он существует, иначе nullptr.
+     *         Использует наиболее надёжный способ поиска, актуальный для UE 5.3+.
+     */
+    virtual UEdGraph* FindConstructionScriptGraph(UBlueprint* Blueprint) const;
 
     static UK2Node_FunctionEntry* FindFunctionEntryNodeInGraph(const UEdGraph* Graph);
     static UK2Node_FunctionResult* FindFunctionResultNodeInGraph(const UEdGraph* Graph);
@@ -79,8 +87,11 @@ protected:
     // ===================================================================
     // Node & Pin Helpers
     // ===================================================================
-    static FString GetReadableNodeName(const UEdGraphNode* Node);
-    static FString GetPinDetails(const UEdGraphPin* Pin);
+    /** Generates a human-readable name for a graph node. Can be overridden by derived classes. */
+    virtual FString GetReadableNodeName(const UEdGraphNode* Node) const;
+    
+    /** Returns details about a pin (value or link information) */
+    virtual FString GetPinDetails(const UEdGraphPin* Pin) const;
     static FString GetPinDisplayName(const UEdGraphPin* Pin);
     static FString CleanName(const FString& RawName);
     static bool IsComputationalNode(const UEdGraphNode* Node);
@@ -101,12 +112,12 @@ protected:
     // ===================================================================
 
     /**
- * Begins a markdown table with specified headers.
+ * Begins a Markdown table with specified headers.
  * 
  * @param OutText       Output string to append to
  * @param Headers       Array of column headers
  * @param Indent        Indentation level
- * @param bBoldHeaders  If true, headers will be wrapped in **bold** markdown
+ * @param bBoldHeaders  If true, headers will be wrapped in **bold** Markdown
  */
     static void BeginMarkdownTable(FString& OutText, 
                                    const TArray<FString>& Headers, 
