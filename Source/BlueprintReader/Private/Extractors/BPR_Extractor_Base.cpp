@@ -22,6 +22,10 @@
 #include "K2Node_Select.h"
 #include "K2Node_VariableGet.h"
 #include "K2Node_VariableSet.h"
+#include "K2Node_InputActionEvent.h"
+#include "K2Node_InputAxisEvent.h"
+#include "K2Node_InputKeyEvent.h"
+#include "K2Node_MacroInstance.h"
 #include "Components/PrimitiveComponent.h"
 #include "GameFramework/Actor.h"
 #include "Engine/World.h"
@@ -462,79 +466,93 @@ FString BPR_Extractor_Base::GetPinDetails(const UEdGraphPin* Pin) const
 
 FString BPR_Extractor_Base::GetReadableNodeName(const UEdGraphNode* Node) const
 {
-	if (!Node)
-	{
-		return TEXT("None");
-	}
+    if (!Node) return TEXT("None");
 
-	// Custom Event
-	if (const UK2Node_CustomEvent* CustomEvent = Cast<UK2Node_CustomEvent>(Node))
-	{
-		if (CustomEvent->CustomFunctionName != NAME_None)
-		{
-			return CustomEvent->CustomFunctionName.ToString();
-		}
-	}
+    // 1. Custom Event
+    if (const UK2Node_CustomEvent* CustomEvent = Cast<UK2Node_CustomEvent>(Node))
+    {
+        if (CustomEvent->CustomFunctionName != NAME_None)
+            return CustomEvent->CustomFunctionName.ToString();
+    }
 
-	// Standard Events (BeginPlay, Tick, OnClicked, etc.)
-	if (const UK2Node_Event* EventNode = Cast<UK2Node_Event>(Node))
-	{
-		FName EventName = EventNode->EventReference.GetMemberName();
-		if (EventName != NAME_None)
-		{
-			return EventName.ToString();
-		}
-	}
+    // 2. Standard Events (BeginPlay, Tick, OnClicked и т.д.)
+    if (const UK2Node_Event* EventNode = Cast<UK2Node_Event>(Node))
+    {
+        FName EventName = EventNode->EventReference.GetMemberName();
+        if (EventName != NAME_None)
+            return EventName.ToString();
+    }
 
-	// Variable Get / Set
-	if (const UK2Node_VariableGet* VarGet = Cast<UK2Node_VariableGet>(Node))
-	{
-		return FString::Printf(TEXT("Get %s"), *VarGet->VariableReference.GetMemberName().ToString());
-	}
+    // 3. Enhanced Input Events (Secondary Thumbstick, IA_Look и т.п.)
+    if (Node->IsA(UK2Node_InputActionEvent::StaticClass()) ||
+        Node->IsA(UK2Node_InputAxisEvent::StaticClass()) ||
+        Node->IsA(UK2Node_InputKeyEvent::StaticClass()))
+    {
+        // Для Enhanced Input GetNodeTitle обычно даёт самое красивое и понятное имя
+        return Node->GetNodeTitle(ENodeTitleType::FullTitle).ToString();
+    }
 
-	if (const UK2Node_VariableSet* VarSet = Cast<UK2Node_VariableSet>(Node))
-	{
-		return FString::Printf(TEXT("Set %s"), *VarSet->VariableReference.GetMemberName().ToString());
-	}
+    // 4. Component Bound Events (OnComponentBeginOverlap, OnActorHit и т.п.)
+    if (const UK2Node_ComponentBoundEvent* BoundEvent = Cast<UK2Node_ComponentBoundEvent>(Node))
+    {
+        if (BoundEvent->EventReference.GetMemberName() != NAME_None)
+        {
+            return BoundEvent->EventReference.GetMemberName().ToString();
+        }
+    }
 
-	// Call Function
-	if (const UK2Node_CallFunction* CallFunc = Cast<UK2Node_CallFunction>(Node))
-	{
-		FString Params;
-		for (UEdGraphPin* Pin : CallFunc->Pins)
-		{
-			if (!Pin || Pin->Direction != EGPD_Input || Pin->PinType.PinCategory == UEdGraphSchema_K2::PC_Exec)
-				continue;
+    // 5. Macro Instance
+    if (Node->IsA(UK2Node_MacroInstance::StaticClass()))
+    {
+        return Node->GetNodeTitle(ENodeTitleType::FullTitle).ToString();
+    }
 
-			Params += FString::Printf(TEXT("%s=%s "), *Pin->PinName.ToString(), *GetPinDetails(Pin));
-		}
-		Params.TrimEndInline();
+    // 6. Variable Get / Set
+    if (const UK2Node_VariableGet* VarGet = Cast<UK2Node_VariableGet>(Node))
+    {
+        return FString::Printf(TEXT("Get %s"), *VarGet->VariableReference.GetMemberName().ToString());
+    }
+    if (const UK2Node_VariableSet* VarSet = Cast<UK2Node_VariableSet>(Node))
+    {
+        return FString::Printf(TEXT("Set %s"), *VarSet->VariableReference.GetMemberName().ToString());
+    }
 
-		FString FuncName = CallFunc->FunctionReference.GetMemberName().ToString();
-		return FString::Printf(TEXT("Call %s(%s)"), *FuncName, *Params);
-	}
+    // 7. Call Function (самый частый нод)
+    if (const UK2Node_CallFunction* CallFunc = Cast<UK2Node_CallFunction>(Node))
+    {
+        FString Params;
+        for (UEdGraphPin* Pin : CallFunc->Pins)
+        {
+            if (!Pin || Pin->Direction != EGPD_Input || Pin->PinType.PinCategory == UEdGraphSchema_K2::PC_Exec)
+                continue;
 
-	// Control flow
-	if (const UK2Node_IfThenElse* Branch = Cast<UK2Node_IfThenElse>(Node))
-	{
-		return FString::Printf(TEXT("If %s"), *GetPinDetails(Branch->GetConditionPin()));
-	}
+            Params += FString::Printf(TEXT("%s=%s "), *Pin->PinName.ToString(), *GetPinDetails(Pin));
+        }
+        Params.TrimEndInline();
 
-	if (const UK2Node_Switch* Switch = Cast<UK2Node_Switch>(Node))
-	{
-		return FString::Printf(TEXT("Switch on %s"), *GetPinDetails(Switch->GetSelectionPin()));
-	}
+        FString FuncName = CallFunc->FunctionReference.GetMemberName().ToString();
+        return FString::Printf(TEXT("Call %s(%s)"), *FuncName, *Params);
+    }
 
-	// Special nodes
-	if (Node->IsA(UK2Node_CallDelegate::StaticClass()))     return TEXT("Call Delegate");
-	if (Node->IsA(UK2Node_Tunnel::StaticClass()))           return TEXT("Macro Tunnel");
-	if (Node->IsA(UK2Node_FunctionEntry::StaticClass()))    return TEXT("Function Entry");
-	if (Node->IsA(UK2Node_FunctionResult::StaticClass()))   return TEXT("Function Result");
-	if (Node->IsA(UK2Node_ComponentBoundEvent::StaticClass())) return TEXT("Component Bound Event");
+    // 8. Control flow
+    if (const UK2Node_IfThenElse* Branch = Cast<UK2Node_IfThenElse>(Node))
+    {
+        return FString::Printf(TEXT("Branch (Condition: %s)"), *GetPinDetails(Branch->GetConditionPin()));
+    }
+    if (const UK2Node_Switch* Switch = Cast<UK2Node_Switch>(Node))
+    {
+        return FString::Printf(TEXT("Switch (Selection: %s)"), *GetPinDetails(Switch->GetSelectionPin()));
+    }
 
-	// Fallback
-	FString Title = Node->GetNodeTitle(ENodeTitleType::FullTitle).ToString();
-	return Title.IsEmpty() ? Node->GetName() : Title;
+    // 9. Special nodes
+    if (Node->IsA(UK2Node_CallDelegate::StaticClass())) return TEXT("Call Delegate");
+    if (Node->IsA(UK2Node_Tunnel::StaticClass()))       return TEXT("Tunnel");
+    if (Node->IsA(UK2Node_FunctionEntry::StaticClass())) return TEXT("Function Entry");
+    if (Node->IsA(UK2Node_FunctionResult::StaticClass())) return TEXT("Function Result");
+
+    // 10. Fallback
+    FString Title = Node->GetNodeTitle(ENodeTitleType::FullTitle).ToString();
+    return Title.IsEmpty() ? Node->GetName() : Title;
 }
 
 bool BPR_Extractor_Base::IsComputationalNode(const UEdGraphNode* Node)
@@ -775,203 +793,181 @@ void BPR_Extractor_Base::ProcessNodeSequence(
     FString& OutExecText,
     FString& OutDataText) const
 {
-	if (!Node || Visited.Contains(Node))
-	{
-		if (Node)
-		{
-			OutExecText += FString::Printf(TEXT("%*s[Loop detected: %s]\n"),
-				IndentLevel * 2, TEXT(""), *Node->GetName());
-		}
-		return;
-	}
+    if (!Node || Visited.Contains(Node))
+    {
+        if (Node)
+        {
+            OutExecText += FString::Printf(TEXT("%*s[Loop Detected: %s]\n"),
+                IndentLevel * 2, TEXT(""), *Node->GetName());
+        }
+        return;
+    }
 
-	Visited.Add(Node);
+    Visited.Add(Node);
 
-	// Build readable node title with optional comment
-	FString NodeTitle = GetReadableNodeName(Node);
-	if (!Node->NodeComment.IsEmpty())
-	{
-		NodeTitle += FString::Printf(TEXT(" // %s"), *Node->NodeComment);
-	}
+    // 1. Readable host name
+    FString NodeTitle = GetReadableNodeName(Node);
+    if (!Node->NodeComment.IsEmpty())
+    {
+        NodeTitle += FString::Printf(TEXT(" // %s"), *Node->NodeComment);
+    }
 
-	// Determine output section
-	if (HasExecInput(Node))
-	{
-		OutExecText += FString::Printf(TEXT("%*s- %s\n"),
-			IndentLevel * 2, TEXT(""), *NodeTitle);
-	}
-	else if (IsComputationalNode(Node))
-	{
-		OutDataText += FString::Printf(TEXT("%*s[pure] %s\n"),
-			IndentLevel * 2, TEXT(""), *NodeTitle);
-	}
-	else
-	{
-		OutExecText += FString::Printf(TEXT("%*s- %s\n"),
-			IndentLevel * 2, TEXT(""), *NodeTitle);
-	}
+    // 2. Exec path or pure node
+    if (HasExecInput(Node))
+    {
+        OutExecText += FString::Printf(TEXT("%*s- %s\n"),
+            IndentLevel * 2, TEXT(""), *NodeTitle);
+    }
+    else if (IsComputationalNode(Node))
+    {
+        OutDataText += FString::Printf(TEXT("%*s[pure] %s\n"),
+            IndentLevel * 2, TEXT(""), *NodeTitle);
+    }
+    else
+    {
+        OutExecText += FString::Printf(TEXT("%*s- %s\n"),
+            IndentLevel * 2, TEXT(""), *NodeTitle);
+    }
 
-	// 3. Data-flow (non-exec pins)
-	for (UEdGraphPin* Pin : Node->Pins)
-	{
-		if (!Pin || Pin->PinType.PinCategory == UEdGraphSchema_K2::PC_Exec)
-			continue;
+    // 3. Data-flow — non-exec pins
+    for (UEdGraphPin* Pin : Node->Pins)
+    {
+        if (!Pin || Pin->PinType.PinCategory == UEdGraphSchema_K2::PC_Exec)
+            continue;
 
-		FString PinName = GetPinDisplayName(Pin);
+        FString PinName = GetPinDisplayName(Pin);
+        for (UEdGraphPin* LinkedTo : Pin->LinkedTo)
+        {
+            if (!LinkedTo || !LinkedTo->GetOwningNode()) continue;
 
-		for (UEdGraphPin* LinkedTo : Pin->LinkedTo)
-		{
-			if (!LinkedTo || !LinkedTo->GetOwningNode())
-				continue;
+            FString TargetNodeName = GetReadableNodeName(LinkedTo->GetOwningNode());
+            FString TargetPinName = GetPinDisplayName(LinkedTo);
 
-			FString TargetNodeName = GetReadableNodeName(LinkedTo->GetOwningNode());
-			FString TargetPinName = GetPinDisplayName(LinkedTo);
+            if (LinkedTo->GetOwningNode()->IsA(UK2Node_Knot::StaticClass()))
+            {
+                TargetNodeName = TEXT("Reroute ") + TargetNodeName;
+            }
 
-			if (LinkedTo->GetOwningNode()->IsA(UK2Node_Knot::StaticClass()))
-			{
-				TargetNodeName = TEXT("Reroute ") + TargetNodeName;
-			}
+            OutDataText += FString::Printf(TEXT("%*s[data] %s.%s → %s.%s\n"),
+                (IndentLevel + 1) * 2, TEXT(""), *NodeTitle, *PinName,
+                *TargetNodeName, *TargetPinName);
 
-			OutDataText += FString::Printf(TEXT("%*s[data] %s.%s → %s.%s\n"),
-				(IndentLevel + 1) * 2, TEXT(""), *NodeTitle, *PinName,
-				*TargetNodeName, *TargetPinName);
+            if (!Visited.Contains(LinkedTo->GetOwningNode()) &&
+                IsComputationalNode(LinkedTo->GetOwningNode()))
+            {
+                ProcessNodeSequence(LinkedTo->GetOwningNode(),
+                    IndentLevel + 1, Visited, OutExecText, OutDataText);
+            }
+        }
+    }
 
-			// Recurse only into computational (pure) nodes for data flow
-			if (!Visited.Contains(LinkedTo->GetOwningNode()) &&
-				IsComputationalNode(LinkedTo->GetOwningNode()))
-			{
-				ProcessNodeSequence(
-					LinkedTo->GetOwningNode(),
-					IndentLevel + 1,
-					Visited,
-					OutExecText,
-					OutDataText
-				);
-			}
-		}
-	}
+    // 4. Exec recursion
+    for (UEdGraphPin* Pin : Node->Pins)
+    {
+        if (!Pin || Pin->PinType.PinCategory != UEdGraphSchema_K2::PC_Exec)
+            continue;
 
-	// 4. Exec flow recursion
-	for (UEdGraphPin* Pin : Node->Pins)
-	{
-		if (!Pin || Pin->PinType.PinCategory != UEdGraphSchema_K2::PC_Exec)
-			continue;
+        FString Label = Pin->PinFriendlyName.IsEmpty()
+            ? TEXT("then")
+            : Pin->PinFriendlyName.ToString();
 
-		FString Label = Pin->PinFriendlyName.IsEmpty() 
-			? TEXT("then") 
-			: Pin->PinFriendlyName.ToString();
+        for (UEdGraphPin* LinkedPin : Pin->LinkedTo)
+        {
+            if (!LinkedPin || !LinkedPin->GetOwningNode()) continue;
 
-		for (UEdGraphPin* LinkedPin : Pin->LinkedTo)
-		{
-			if (!LinkedPin || !LinkedPin->GetOwningNode())
-				continue;
+            OutExecText += FString::Printf(TEXT("%*s [%s] →\n"),
+                IndentLevel * 2, TEXT(""), *Label);
 
-			OutExecText += FString::Printf(TEXT("%*s  [%s] →\n"),
-				IndentLevel * 2, TEXT(""), *Label);
-
-			ProcessNodeSequence(
-				LinkedPin->GetOwningNode(),
-				IndentLevel + 1,
-				Visited,
-				OutExecText,
-				OutDataText
-			);
-		}
-	}
+            ProcessNodeSequence(LinkedPin->GetOwningNode(),
+                IndentLevel + 1, Visited, OutExecText, OutDataText);
+        }
+    }
 }
 
 void BPR_Extractor_Base::AppendGraphSequence(
-	const UEdGraph* Graph,
-	FString& OutExecText,
-	FString& OutDataText) const
+    const UEdGraph* Graph,
+    FString& OutExecText,
+    FString& OutDataText) const
 {
-	if (!Graph || Graph->Nodes.Num() == 0)
-	{
-		return;
-	}
+    if (!Graph || Graph->Nodes.Num() == 0)
+    {
+        return;
+    }
 
-	TSet<UEdGraphNode*> Visited;
+    TSet<UEdGraphNode*> Visited;
 
-	// Try to find a good starting point
-	UEdGraphNode* StartNode = FindFunctionEntryNodeInGraph(Graph);
+    // 1. Ищем стартовую точку (приоритет: FunctionEntry → EventNode → первый нод)
+    UEdGraphNode* StartNode = FindFunctionEntryNodeInGraph(Graph);
 
-	// For Event Graphs without FunctionEntry (common case), start from the first Event node
-	if (!StartNode)
-	{
-		for (UEdGraphNode* Node : Graph->Nodes)
-		{
-			if (Node && Node->IsA(UK2Node_Event::StaticClass()))
-			{
-				StartNode = Node;
-				break;
-			}
-		}
-	}
+    if (!StartNode)
+    {
+        // Для Event Graphs ищем любой Event нод
+        for (UEdGraphNode* Node : Graph->Nodes)
+        {
+            if (Node && Node->IsA(UK2Node_Event::StaticClass()))
+            {
+                StartNode = Node;
+                break;
+            }
+        }
+    }
 
-	// Fallback to first node
-	if (!StartNode && !Graph->Nodes.IsEmpty())
-	{
-		StartNode = Graph->Nodes[0];
-	}
+    // Fallback
+    if (!StartNode && !Graph->Nodes.IsEmpty())
+    {
+        StartNode = Graph->Nodes[0];
+    }
 
-	// Main execution flow
-	if (StartNode)
-	{
-		ProcessNodeSequence(StartNode, 0, Visited, OutExecText, OutDataText);
-	}
+    // 2. Основной EXEC-поток
+    if (StartNode)
+    {
+        ProcessNodeSequence(StartNode, 0, Visited, OutExecText, OutDataText);
+    }
 
-	// Pure/computational nodes not reached by exec flow
-	for (UEdGraphNode* Node : Graph->Nodes)
-	{
-		if (!Node || Visited.Contains(Node) || !IsComputationalNode(Node))
-			continue;
+    // 3. Обработка чистых (pure/computational) нодов, которые не попали в EXEC-цепочку
+    for (UEdGraphNode* Node : Graph->Nodes)
+    {
+        if (!Node || Visited.Contains(Node) || !IsComputationalNode(Node))
+            continue;
 
-		FString NodeTitle = GetReadableNodeName(Node);
-		if (!Node->NodeComment.IsEmpty())
-		{
-			NodeTitle += FString::Printf(TEXT(" // %s"), *Node->NodeComment);
-		}
+        FString NodeTitle = GetReadableNodeName(Node);
+        if (!Node->NodeComment.IsEmpty())
+        {
+            NodeTitle += FString::Printf(TEXT(" // %s"), *Node->NodeComment);
+        }
 
-		OutDataText += FString::Printf(TEXT("[pure] %s (no exec)\n"), *NodeTitle);
-		Visited.Add(Node);
+        OutDataText += FString::Printf(TEXT("[pure] %s (no exec)\n"), *NodeTitle);
+        Visited.Add(Node);
 
-		// Process data connections
-		for (UEdGraphPin* Pin : Node->Pins)
-		{
-			if (!Pin || Pin->PinType.PinCategory == UEdGraphSchema_K2::PC_Exec)
-				continue;
+        // 3.1 Обход всех data-пинов
+        for (UEdGraphPin* Pin : Node->Pins)
+        {
+            if (!Pin || Pin->PinType.PinCategory == UEdGraphSchema_K2::PC_Exec)
+                continue;
 
-			FString PinName = GetPinDisplayName(Pin);
+            FString PinName = GetPinDisplayName(Pin);
+            for (UEdGraphPin* LinkedTo : Pin->LinkedTo)
+            {
+                if (!LinkedTo || !LinkedTo->GetOwningNode()) continue;
 
-			for (UEdGraphPin* LinkedTo : Pin->LinkedTo)
-			{
-				if (!LinkedTo || !LinkedTo->GetOwningNode())
-					continue;
+                FString TargetNodeName = GetReadableNodeName(LinkedTo->GetOwningNode());
+                FString TargetPinName = GetPinDisplayName(LinkedTo);
 
-				FString TargetNodeName = GetReadableNodeName(LinkedTo->GetOwningNode());
-				FString TargetPinName = GetPinDisplayName(LinkedTo);
+                if (LinkedTo->GetOwningNode()->IsA(UK2Node_Knot::StaticClass()))
+                {
+                    TargetNodeName = TEXT("Reroute ") + TargetNodeName;
+                }
 
-				if (LinkedTo->GetOwningNode()->IsA(UK2Node_Knot::StaticClass()))
-				{
-					TargetNodeName = TEXT("Reroute ") + TargetNodeName;
-				}
+                OutDataText += FString::Printf(TEXT(" [data] %s.%s → %s.%s\n"),
+                    *NodeTitle, *PinName, *TargetNodeName, *TargetPinName);
 
-				OutDataText += FString::Printf(TEXT("   [data] %s.%s → %s.%s\n"),
-					*NodeTitle, *PinName, *TargetNodeName, *TargetPinName);
-
-				if (!Visited.Contains(LinkedTo->GetOwningNode()))
-				{
-					ProcessNodeSequence(
-						LinkedTo->GetOwningNode(),
-						1,
-						Visited,
-						OutExecText,
-						OutDataText
-					);
-				}
-			}
-		}
-	}
+                if (!Visited.Contains(LinkedTo->GetOwningNode()))
+                {
+                    ProcessNodeSequence(LinkedTo->GetOwningNode(), 1, Visited, OutExecText, OutDataText);
+                }
+            }
+        }
+    }
 }
 
 void BPR_Extractor_Base::AppendGraphs(UBlueprint* Blueprint, FString& OutText) const
@@ -981,7 +977,8 @@ void BPR_Extractor_Base::AppendGraphs(UBlueprint* Blueprint, FString& OutText) c
         return;
     }
 
-    OutText += TEXT("## Graphs\n\n");
+    // Главный заголовок добавляется только один раз в Process() у экстрактора.
+    // Здесь мы сразу начинаем с подразделов.
 
     // === Construction Script ===
     {
@@ -1022,20 +1019,37 @@ void BPR_Extractor_Base::AppendGraphs(UBlueprint* Blueprint, FString& OutText) c
     }
 
     // === Function Graphs (кроме ConstructionScript) ===
+    bool bHasAnyFunction = false;
     for (UEdGraph* Graph : Blueprint->FunctionGraphs)
     {
         if (!Graph || Graph->GetName() == TEXT("ConstructionScript"))
             continue;
 
+        bHasAnyFunction = true;
+
         FString Signature = GetFunctionSignature(Graph);
         FString GraphName = CleanName(Graph->GetName());
 
-        OutText += FString::Printf(TEXT("### Function: %s\n- Signature: %s\n\n"),
-            *GraphName, *Signature);
+        AppendSectionHeader(OutText, FString::Printf(TEXT("Function: %s"), *GraphName));
+
+        if (!Signature.IsEmpty() && Signature != TEXT("None"))
+        {
+            OutText += FString::Printf(TEXT("- Signature: %s\n\n"), *Signature);
+        }
+        else
+        {
+            OutText += TEXT("\n");
+        }
 
         FString ExecFlow, DataFlow;
         AppendGraphSequence(Graph, ExecFlow, DataFlow);
         OutText += ExecFlow + DataFlow + TEXT("\n\n");
+    }
+
+    if (!bHasAnyFunction)
+    {
+        // Опционально: можно добавить заметку, если функций совсем нет
+        // OutText += TEXT("Note: No custom functions found.\n\n");
     }
 
     // === Macro Graphs ===
@@ -1046,8 +1060,16 @@ void BPR_Extractor_Base::AppendGraphs(UBlueprint* Blueprint, FString& OutText) c
         FString Signature = GetMacroSignature(Graph);
         FString GraphName = CleanName(Graph->GetName());
 
-        OutText += FString::Printf(TEXT("### Macro: %s\n- Signature: %s\n\n"),
-            *GraphName, *Signature);
+        AppendSectionHeader(OutText, FString::Printf(TEXT("Macro: %s"), *GraphName));
+
+        if (!Signature.IsEmpty() && Signature != TEXT("None"))
+        {
+            OutText += FString::Printf(TEXT("- Signature: %s\n\n"), *Signature);
+        }
+        else
+        {
+            OutText += TEXT("\n");
+        }
 
         FString ExecFlow, DataFlow;
         AppendGraphSequence(Graph, ExecFlow, DataFlow);
