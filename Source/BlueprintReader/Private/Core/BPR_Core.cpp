@@ -10,7 +10,7 @@
 #include "Extractors/BPR_Extractor_MaterialFunction.h"
 #include "Extractors/BPR_Extractor_Enum.h"
 #include "Extractors/BPR_Extractor_Structure.h"
-#include "Extractors/BPR_Extractor_InterfaceBP.h"
+#include "Extractors/BPR_Extractor_Interface.h"
 #include "Extractors/BPR_Extractor_Widget.h"
 #include "Framework/Application/SlateApplication.h"
 #include "Widgets/SWindow.h"
@@ -121,8 +121,8 @@ void BPR_Core::ExtractorSelector(UObject* Object)
     case EAssetType::InterfaceBP:
         {
             UE_LOG(LogTemp, Log, TEXT("BPR_Core: Using InterfaceBP extractor"));
-            BPR_Extractor_InterfaceBP Extractor;
-            Extractor.ProcessInterfaceBP(Object, TextData);      
+            BPR_Extractor_Interface Extractor;
+            Extractor.Process(Object, TextData);      
             break;
         }
        

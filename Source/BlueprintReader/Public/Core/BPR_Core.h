@@ -16,6 +16,7 @@ BLUEPRINTREADER_API DECLARE_LOG_CATEGORY_EXTERN(LogBlueprintReader, Log, All);
 enum class EAssetType : uint8
 {
     Unknown,
+    Blueprint,
     Actor,
     Widget,
     Material,

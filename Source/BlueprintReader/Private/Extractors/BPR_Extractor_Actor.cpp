@@ -56,7 +56,7 @@ void BPR_Extractor_Actor::Process(UObject* SelectedObject, FBPR_ExtractedData& O
 // Actor-specific Structure
 // ===================================================================
 
-void BPR_Extractor_Actor::AppendClassInfo(UBlueprint* Blueprint, FString& OutText) const
+void BPR_Extractor_Actor::AppendClassInfo(const UBlueprint* Blueprint, FString& OutText) const
 {
 	if (!Blueprint || !Blueprint->GeneratedClass)
 	{
@@ -80,7 +80,7 @@ void BPR_Extractor_Actor::AppendClassInfo(UBlueprint* Blueprint, FString& OutTex
 	OutText += TEXT("\n");
 }
 
-void BPR_Extractor_Actor::AppendActorComponents(UBlueprint* Blueprint, FString& OutText) const
+void BPR_Extractor_Actor::AppendActorComponents(const UBlueprint* Blueprint, FString& OutText) const
 {
 	if (!Blueprint || !Blueprint->GeneratedClass)
 	{
@@ -112,7 +112,7 @@ void BPR_Extractor_Actor::AppendActorComponents(UBlueprint* Blueprint, FString& 
 	OutText += TEXT("\n");
 }
 
-void BPR_Extractor_Actor::AppendActorTags(UBlueprint* Blueprint, FString& OutText) const
+void BPR_Extractor_Actor::AppendActorTags(const UBlueprint* Blueprint, FString& OutText) const
 {
 	if (!Blueprint || !Blueprint->GeneratedClass)
 	{
@@ -137,7 +137,7 @@ void BPR_Extractor_Actor::AppendActorTags(UBlueprint* Blueprint, FString& OutTex
 	OutText += TEXT("\n");
 }
 
-FString BPR_Extractor_Actor::FormatComponentInfo(UActorComponent* Component) const
+FString BPR_Extractor_Actor::FormatComponentInfo(UActorComponent* Component)
 {
 	if (!Component)
 	{
@@ -170,7 +170,7 @@ FString BPR_Extractor_Actor::FormatComponentInfo(UActorComponent* Component) con
 // Node Name Override (Actor-specific)
 // ===================================================================
 
-FString BPR_Extractor_Actor::GetReadableNodeName(UEdGraphNode* Node) const
+FString BPR_Extractor_Actor::GetReadableNodeName(const UEdGraphNode* Node) const
 {
 	if (!Node)
 	{
@@ -179,5 +179,5 @@ FString BPR_Extractor_Actor::GetReadableNodeName(UEdGraphNode* Node) const
 
 	// You can add Actor-specific enhancements here in the future
 	// For now we use the base implementation
-	return BPR_Extractor_Base::GetReadableNodeName(Node);
+	return BPR_Extractor_Object::GetReadableNodeName(Node);
 }

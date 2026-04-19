@@ -18,5 +18,5 @@ public:
 
 private:
 	/** Appends detailed information about the structure fields as a Markdown table */
-	void AppendStructInfo(const UScriptStruct* Struct, FString& OutText) const;
+	static void AppendStructInfo(const UScriptStruct* Struct, FString& OutText);
 };

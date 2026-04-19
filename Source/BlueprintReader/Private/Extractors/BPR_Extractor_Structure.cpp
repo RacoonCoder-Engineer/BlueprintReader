@@ -63,7 +63,7 @@ void BPR_Extractor_Structure::Process(UObject* SelectedObject, FBPR_ExtractedDat
 	OutData.AssetType = EAssetType::Structure;
 }
 
-void BPR_Extractor_Structure::AppendStructInfo(const UScriptStruct* Struct, FString& OutText) const
+void BPR_Extractor_Structure::AppendStructInfo(const UScriptStruct* Struct, FString& OutText)
 {
 	if (!Struct)
 	{
