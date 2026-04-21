@@ -642,3 +642,8 @@ void BPR_Extractor_Base::AppendTableRow(FString& OutText, const TArray<FString>&
 	}
 	OutText += TEXT("\n");
 }
+
+bool BPR_Extractor_Base::CanHandleAsset(UObject* Asset) const
+{
+	return false; // Base не обрабатывает ничего сам
+}

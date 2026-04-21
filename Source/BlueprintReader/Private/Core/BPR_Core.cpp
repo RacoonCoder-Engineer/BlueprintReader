@@ -1,153 +1,99 @@
 // Copyright (c) 2026 Racoon Coder. All rights reserved.
 
-#include "Core/BPR_Core.h"
+//ToDo:
+// Что нужно сделать дальше:
+//
+// Создать BPR_Extractor_Blueprint.h/.cpp (для обычных Blueprint Class) — если ещё нет.
+// В каждом существующем экстракторе реализовать CanHandleAsset() и GetPriority().
+// Обновить BPR_Extractor_Base (добавить GetPriority() и CalculateInheritanceDepth()).
+// Вызвать Core->RegisterAllExtractors() в StartupModule() плагина.
+//
+// Хочешь, я сразу напишу обновлённый BPR_Extractor_Base.h/.cpp с поддержкой приоритетов?
+// Или сначала посмотрим на этот Core и поправим, если нужно?
+// Говори, что делаем дальше.
 
-#include "Blueprint/UserWidget.h"
-#include "Engine/Blueprint.h"
+#include "Core/BPR_Core.h"
+#include "Extractors/BPR_Extractor_Base.h"
+
+// === Concrete extractors (add new ones here) ===
 #include "Extractors/BPR_Extractor_Actor.h"
 #include "Extractors/BPR_Extractor_ActorComponent.h"
+#include "Extractors/BPR_Extractor_Widget.h"
+#include "Extractors/BPR_Extractor_Interface.h"
 #include "Extractors/BPR_Extractor_Material.h"
 #include "Extractors/BPR_Extractor_MaterialFunction.h"
 #include "Extractors/BPR_Extractor_Enum.h"
 #include "Extractors/BPR_Extractor_Structure.h"
-#include "Extractors/BPR_Extractor_Interface.h"
-#include "Extractors/BPR_Extractor_Widget.h"
-#include "Framework/Application/SlateApplication.h"
-#include "Widgets/SWindow.h"
-#include "Logging/LogMacros.h"
+//#include "Extractors/BPR_Extractor_Blueprint.h"   // ← для обычных Blueprint Class
 
-//==============================================================================
-//  IsSupportedAsset
-//==============================================================================
-// Sets CachedType and returns true if supported.
-// Beware: this method exposes CachedType as a side effect.
-//==============================================================================
-bool BPR_Core::IsSupportedAsset(UObject* Object)
+BPR_Core::BPR_Core() = default;
+BPR_Core::~BPR_Core() = default;
+
+void BPR_Core::RegisterAllExtractors()
 {
-    CachedType = EAssetType::Unknown;
-    if (!Object) return false;
+    Extractors.Empty();
 
-    if (UBlueprint* BP = Cast<UBlueprint>(Object))
+    // Register from most specific to most general (priority will also be considered)
+    Extractors.Add(MakeUnique<BPR_Extractor_Actor>());
+    Extractors.Add(MakeUnique<BPR_Extractor_ActorComponent>());
+    Extractors.Add(MakeUnique<BPR_Extractor_Widget>());
+    Extractors.Add(MakeUnique<BPR_Extractor_Interface>());
+    Extractors.Add(MakeUnique<BPR_Extractor_Material>());
+    Extractors.Add(MakeUnique<BPR_Extractor_MaterialFunction>());
+    Extractors.Add(MakeUnique<BPR_Extractor_Enum>());
+    Extractors.Add(MakeUnique<BPR_Extractor_Structure>());
+    //Extractors.Add(MakeUnique<BPR_Extractor_Blueprint>());   // обычные Blueprint Class
+
+    // Sort by priority (highest first)
+    Extractors.Sort([](const TUniquePtr<BPR_Extractor_Base>& A, const TUniquePtr<BPR_Extractor_Base>& B)
     {
-        if (BP->GeneratedClass)
-        {
-            if (BP->GeneratedClass->IsChildOf(AActor::StaticClass()))
-            {
-                CachedType = EAssetType::Actor;
-                return true;
-            }
-            
-            else if (BP->GeneratedClass->IsChildOf(UUserWidget::StaticClass()))  // New String
-            {
-                CachedType = EAssetType::Widget;
-                return true;
-            }
-            
-            else if (BP->GeneratedClass->IsChildOf(UActorComponent::StaticClass()))
-            {
-                CachedType = EAssetType::ActorComponent;
-                return true;
-            }
-                     
-        }
-    }
+        return A->GetPriority() > B->GetPriority();
+    });
 
-    if (Cast<UMaterial>(Object) || Cast<UMaterialInstance>(Object))
-    {
-        CachedType = EAssetType::Material;
-        return true;
-    }
-    if (Cast<UMaterialFunction>(Object)) { CachedType = EAssetType::MaterialFunction; return true; }
-    if (Cast<UEnum>(Object)) { CachedType = EAssetType::Enum; return true; }
-    if (Cast<UScriptStruct>(Object)) { CachedType = EAssetType::Structure; return true; }
-    if (Cast<UBlueprint>(Object)) { CachedType = EAssetType::InterfaceBP; return true; }
-
-    return false;
+    UE_LOG(LogBlueprintReader, Log, TEXT("BPR_Core: Registered %d extractors"), Extractors.Num());
 }
 
-//==============================================================================
-//  ExtractorSelector
-//==============================================================================
-void BPR_Core::ExtractorSelector(UObject* Object)
+bool BPR_Core::IsSupportedAsset(UObject* Asset) const
 {
-    if (!Object) return;
+    return FindSuitableExtractor(Asset) != nullptr;
+}
 
-    if (CachedType == EAssetType::Unknown)
+void BPR_Core::ExtractAsset(UObject* Asset, FBPR_ExtractedData& OutData)
+{
+    if (!Asset)
     {
-        IsSupportedAsset(Object);
+        OutData.Structure = FText::FromString(TEXT("Error: Null asset"));
+        OutData.AssetType = EAssetType::Unknown;
+        return;
     }
 
-    switch (CachedType)
+    if (BPR_Extractor_Base* Extractor = FindSuitableExtractor(Asset))
     {
-    case EAssetType::ActorComponent:
-        {
-            UE_LOG(LogTemp, Log, TEXT("BPR_Core: Using ActorComponent extractor"));
-            BPR_Extractor_ActorComponent Extractor;
-            Extractor.ProcessComponent(Object, TextData);
-            break;
-        }
-
-    case EAssetType::Actor:
-        {
-            UE_LOG(LogTemp, Log, TEXT("BPR_Core: Using Actor extractor"));
-            BPR_Extractor_Actor Extractor;
-            Extractor.Process(Object, TextData);
-            break;
-        }
-    case EAssetType::Widget:
-        {
-            UE_LOG(LogTemp, Log, TEXT("BPR_Core: Using Widget extractor"));
-            BPR_Extractor_Widget Extractor;         
-            Extractor.ProcessWidget(Object, TextData);
-            break;
-        }
-
-    case EAssetType::Enum:
-        {
-            UE_LOG(LogTemp, Log, TEXT("BPR_Core: Using Enum extractor"));
-            BPR_Extractor_Enum Extractor;
-            Extractor.Process(Object, TextData);
-            break;
-        }
-        
-    case EAssetType::Structure:
-        {
-            UE_LOG(LogTemp, Log, TEXT("BPR_Core: Using Structure extractor"));
-            BPR_Extractor_Structure Extractor;
-            Extractor.Process(Object, TextData);
-            break;
-        }
-        
-    case EAssetType::InterfaceBP:
-        {
-            UE_LOG(LogTemp, Log, TEXT("BPR_Core: Using InterfaceBP extractor"));
-            BPR_Extractor_Interface Extractor;
-            Extractor.Process(Object, TextData);      
-            break;
-        }
-       
-    case EAssetType::Material:
-        {
-            UE_LOG(LogTemp, Log, TEXT("BPR_Core: Using Material extractor"));
-            BPR_Extractor_Material Extractor;
-            Extractor.ProcessMaterial(Object, TextData);
-            break;
-        }
-        
-    case EAssetType::MaterialFunction:
-        {
-            UE_LOG(LogTemp, Log, TEXT("BPR_Core: Using MaterialFunction extractor"));
-            BPR_Extractor_MaterialFunction Extractor;
-            Extractor.ProcessMaterialFunction(Object, TextData);
-            break;
-        }
-    
-    default:
-        UE_LOG(LogTemp, Warning, TEXT("BPR_Core: No extractor for CachedType %d"), static_cast<int32>(CachedType));
-        break;
+        Extractor->Extract(Asset, OutData);
+        UE_LOG(LogBlueprintReader, Log, TEXT("BPR_Core: Used extractor: %s"), *Extractor->GetExtractorName());
     }
-    
-    TextData.AssetType = CachedType;
+    else
+    {
+        // Unsupported asset
+        OutData.AssetType = EAssetType::Unknown;
+        OutData.Structure = FText::FromString(TEXT("No Data found"));
+        OutData.Graph     = FText::FromString(TEXT("N/A"));
+        OutData.Design    = FText::FromString(TEXT("N/A"));
+
+        UE_LOG(LogBlueprintReader, Warning, TEXT("BPR_Core: No extractor found for asset: %s"), *Asset->GetName());
+    }
+}
+
+BPR_Extractor_Base* BPR_Core::FindSuitableExtractor(UObject* Asset) const
+{
+    for (const TUniquePtr<BPR_Extractor_Base>& Extractor : Extractors)
+    {
+        if (Extractor->CanHandleAsset(Asset))
+        {
+            return Extractor.Get();
+        }
+    }
+    return nullptr;
 }
 
 FUnsupportedAssetInfo BPR_Core::GetUnsupportedAssetInfo() const
@@ -162,4 +108,3 @@ FUnsupportedAssetInfo BPR_Core::GetUnsupportedAssetInfo() const
         FText::FromString("Check for updates")
     };
 }
-

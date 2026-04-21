@@ -3,92 +3,46 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Engine/Blueprint.h"
-#include "GameFramework/Actor.h"
-#include "Materials/Material.h"
-#include "Components/ActorComponent.h"
+#include "Core/BPR_Types.h"
 
-BLUEPRINTREADER_API DECLARE_LOG_CATEGORY_EXTERN(LogBlueprintReader, Log, All);
+// Forward declarations
+class BPR_Extractor_Base;
 
-//---------------------------------------------------------------------- 
-//  Types of Assets Supported
-//---------------------------------------------------------------------- 
-enum class EAssetType : uint8
-{
-    Unknown,
-    Blueprint,
-    Actor,
-    Widget,
-    Material,
-    MaterialFunction,
-    ActorComponent,
-    Enum,
-    Structure,
-    InterfaceBP
-};
-
-
-
-//---------------------------------------------------------------------- 
-//  Data for unsupported Assets
-//---------------------------------------------------------------------- 
-struct FUnsupportedAssetInfo
-{
-    FText Title;
-    FText MainMessage;
-    FText SubMessage;
-    FString GitHubURL;
-    FText ButtonText;
-};
-
-//---------------------------------------------------------------------- 
-//  Structure for Data Output
-//---------------------------------------------------------------------- 
-    
-struct FBPR_ExtractedData
-{
-    FText Structure = FText::FromString(TEXT("No Data found"));
-    FText Graph     = FText::FromString(TEXT("No Data found"));
-    FText Design   = FText::FromString(TEXT("No Data found"));
-    EAssetType AssetType = EAssetType::Unknown;
-};
-
-class SBPR_TextWidget;
-
-//==============================================================================
-// BPR_Core - central data retrieval logic
-// (minimum, only for ActorComponent and Actor in the first step)
-//==============================================================================
-class BPR_Core
+/**
+ * Central service and extractor factory.
+ * 
+ * Responsibilities:
+ *   - Holds and registers all available extractors
+ *   - Finds the most suitable extractor for a given asset using priority + CanHandleAsset()
+ *   - Serves as the single entry point for UI layer
+ *   - Provides unsupported asset handling
+ */
+class BLUEPRINTREADER_API BPR_Core
 {
 public:
+	BPR_Core();
+	~BPR_Core();
 
-    BPR_Core() = default;
-    ~BPR_Core() = default;
+	/** Must be called once during module startup to register all extractors */
+	void RegisterAllExtractors();
 
-    //---------------------------------------------------------------------- 
-    //  General logic
-    //---------------------------------------------------------------------- 
-    bool IsSupportedAsset(UObject* Object);
-    void ExtractorSelector(UObject* Object);
+	/** Returns true if any extractor can handle this asset */
+	bool IsSupportedAsset(UObject* Asset) const;
 
-    // --- Data access for UI ---
-    const FBPR_ExtractedData& GetTextData() const { return TextData; }
-    
-    //==============================================================================
-    // Logic for unsupported assets
-    // (minimum, only for ActorComponent and Actor in the first step)
-    //==============================================================================   
-    
-    
+	/**
+	 * Main extraction entry point.
+	 * Finds the best extractor by priority and calls its Extract() method.
+	 * If no extractor found → fills OutData with unsupported state.
+	 */
+	void ExtractAsset(UObject* Asset, FBPR_ExtractedData& OutData);
 
-    FUnsupportedAssetInfo GetUnsupportedAssetInfo() const;
+	/** Returns information for "unsupported asset" UI dialog */
+	FUnsupportedAssetInfo GetUnsupportedAssetInfo() const;
 
 private:
+	/** Finds the highest priority extractor that can handle the asset */
+	BPR_Extractor_Base* FindSuitableExtractor(UObject* Asset) const;
 
-    //---------------------------------------------------------------------- 
-    //  State Core
-    //---------------------------------------------------------------------- 
-    EAssetType CachedType = EAssetType::Unknown;    
-    FBPR_ExtractedData TextData;
+	/** List of all registered extractors, sorted by priority (highest first) */
+	TArray<TUniquePtr<BPR_Extractor_Base>> Extractors;
 };
