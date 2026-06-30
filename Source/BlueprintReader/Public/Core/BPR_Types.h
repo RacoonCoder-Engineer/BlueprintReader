@@ -44,6 +44,7 @@ struct FBPR_ExtractedData
 	FText Graph     = FText::FromString(TEXT("No Data found"));
 	FText Design    = FText::FromString(TEXT("No Data found"));
 	EAssetType AssetType = EAssetType::Unknown;
+	FString AssetName;   // M4.2: source asset name, used as the default export filename
 };
 
 enum class EOutputFormat : uint8

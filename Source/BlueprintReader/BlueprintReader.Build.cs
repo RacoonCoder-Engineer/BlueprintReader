@@ -28,7 +28,8 @@ public class BlueprintReader : ModuleRules
 				"Slate",
 				"SlateCore",
 				"UMG",
-				"UMGEditor"
+				"UMGEditor",
+				"DeveloperSettings"   // M4.1: UBPR_Settings (UDeveloperSettings)
 			}
 		);
 
@@ -48,6 +49,7 @@ public class BlueprintReader : ModuleRules
 					"WorkspaceMenuStructure",
 					"UMG",
 					"EditorStyle",
+					"DesktopPlatform",   // M4.2: native SaveFileDialog for export
 					"StateTreeModule",
 					"GameplayStateTreeModule",
 					"StateTreeEditorModule"

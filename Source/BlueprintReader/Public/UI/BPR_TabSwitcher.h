@@ -32,6 +32,13 @@ private:
 
 	void RebuildTabsFromData();
 
+	// M4.2: Export to file
+	FReply OnExportClicked();
+	/** Concatenates the meaningful (non-N/A) sections of CurrentData into one document. */
+	FString BuildExportDocument() const;
+	/** Shows a transient editor notification (success/fail) after an export attempt. */
+	void ShowNotification(const FText& Message, bool bSuccess) const;
+
 	// Helper-фабрики для контента табов (расширяй по мере нужды)
 	TSharedRef<SWidget> CreateDesignTabContent(const FText& Content) const;
 	TSharedRef<SWidget> CreateStructureTabContent(const FText& Content) const;

@@ -95,6 +95,9 @@ void BPR_Core::ExtractAsset(UObject* Asset, FBPR_ExtractedData& OutData)
 
         UE_LOG(LogBlueprintReader, Warning, TEXT("BPR_Core: No extractor found for asset: %s"), *Asset->GetName());
     }
+
+    // M4.2: centrally record the asset name so the UI can offer a sensible export filename.
+    OutData.AssetName = Asset->GetName();
 }
 
 BPR_Extractor_Base* BPR_Core::FindSuitableExtractor(UObject* Asset) const

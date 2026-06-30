@@ -40,6 +40,7 @@
 // =====================================================================
 
 #include "Extractors/BPR_Extractor_Widget.h"
+#include "Core/BPR_Settings.h"   // M4.1: user-configured recursion depth
 
 // Общие инклюды из Actor-экстрактора
 #include "Engine/Blueprint.h"
@@ -153,6 +154,16 @@ void BPR_Extractor_Widget::ProcessWidget(UObject* SelectedObject, FBPR_Extracted
         OutData.Graph     = FText::FromString("Warning: Not a Widget Blueprint.");
         OutData.Design    = FText::FromString("Warning: Not a Widget Blueprint.");
         return;
+    }
+
+    // M4.1: honor user-configured recursion depth
+    // (Project Settings -> Plugins -> Blueprint Reader). SetRecursionSettings clamps MaxDepth >= 1.
+    if (const UBPR_Settings* Settings = GetDefault<UBPR_Settings>())
+    {
+        FWidgetRecursionSettings RS;
+        RS.bRestrictDepth = Settings->bRestrictWidgetRecursionDepth;
+        RS.MaxDepth       = Settings->WidgetRecursionDepth;
+        SetRecursionSettings(RS);
     }
 
     FString TmpStructure;
