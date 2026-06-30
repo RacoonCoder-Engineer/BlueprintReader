@@ -23,8 +23,21 @@
 #include "Materials/MaterialExpressionFunctionOutput.h"
 
 
-BPR_Extractor_MaterialFunction::BPR_Extractor_MaterialFunction() {} //ToDo инициализируй ExtractorName = TEXT("Actor");
+BPR_Extractor_MaterialFunction::BPR_Extractor_MaterialFunction()
+{
+	SetExtractorName(TEXT("MaterialFunction"));
+}
 BPR_Extractor_MaterialFunction::~BPR_Extractor_MaterialFunction() {}
+
+void BPR_Extractor_MaterialFunction::Process(UObject* SelectedObject, FBPR_ExtractedData& OutData)
+{
+	ProcessMaterialFunction(SelectedObject, OutData);
+}
+
+bool BPR_Extractor_MaterialFunction::CanHandleAsset(UObject* Asset) const
+{
+	return Cast<UMaterialFunction>(Asset) != nullptr || Cast<UMaterialFunctionInstance>(Asset) != nullptr;
+}
 
 void BPR_Extractor_MaterialFunction::ProcessMaterialFunction(UObject* SelectedObject, FBPR_ExtractedData& OutData)
 {
@@ -73,6 +86,8 @@ void BPR_Extractor_MaterialFunction::ProcessMaterialFunction(UObject* SelectedOb
 
     OutData.Structure = FText::FromString(TmpStructure);
     OutData.Graph = FText::FromString(TmpGraph);
+    OutData.Design = FText::FromString(TEXT("N/A"));
+    OutData.AssetType = EAssetType::MaterialFunction;
 }
 
 //==============================================================================
@@ -770,6 +785,4 @@ UMaterialExpression* BPR_Extractor_MaterialFunction::ResolveExpression(
 //==============================================================================
 // Logging
 //==============================================================================
-void BPR_Extractor_MaterialFunction::LogWarning(const FString& Msg) { UE_LOG(LogTemp, Warning, TEXT("%s"), *Msg); }
-void BPR_Extractor_MaterialFunction::LogError(const FString& Msg) { UE_LOG(LogTemp, Error, TEXT("%s"), *Msg); }
-void BPR_Extractor_MaterialFunction::LogMessage(const FString& Msg) { UE_LOG(LogTemp, Log, TEXT("%s"), *Msg); }
+// Logging (LogMessage/LogWarning/LogError) inherited from BPR_Extractor_Base (LogBlueprintReader).

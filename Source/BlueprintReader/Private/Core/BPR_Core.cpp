@@ -39,11 +39,11 @@ void BPR_Core::RegisterAllExtractors()
     // NOTE (M1): Only register extractors that properly inherit BPR_Extractor_Base.
     // Legacy (Widget, Material, ActorComponent, MaterialFunction) will be added via adapters in Phase 3.
     Extractors.Add(MakeShared<BPR_Extractor_Actor>());
-    // Extractors.Add(MakeShared<BPR_Extractor_ActorComponent>()); // TODO: adapter or inheritance
+    Extractors.Add(MakeShared<BPR_Extractor_ActorComponent>());    // M3: now inherits Object
     Extractors.Add(MakeShared<BPR_Extractor_Widget>());   // M2: now properly inherits from Object
     Extractors.Add(MakeShared<BPR_Extractor_Interface>());
-    // Extractors.Add(MakeShared<BPR_Extractor_Material>());       // TODO: adapter
-    // Extractors.Add(MakeShared<BPR_Extractor_MaterialFunction>()); // TODO: adapter
+    Extractors.Add(MakeShared<BPR_Extractor_Material>());          // M3: Base subclass
+    Extractors.Add(MakeShared<BPR_Extractor_MaterialFunction>());  // M3: Base subclass
     Extractors.Add(MakeShared<BPR_Extractor_Enum>());
     Extractors.Add(MakeShared<BPR_Extractor_Structure>());
     //Extractors.Add(MakeUnique<BPR_Extractor_Blueprint>());   // обычные Blueprint Class

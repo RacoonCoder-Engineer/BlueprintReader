@@ -20,8 +20,21 @@
 #include "Materials/MaterialExpressionConstant4Vector.h"
 #include "Materials/MaterialExpressionStaticSwitch.h"
 
-BPR_Extractor_Material::BPR_Extractor_Material() {} //ToDo инициализируй ExtractorName = TEXT("Actor");
+BPR_Extractor_Material::BPR_Extractor_Material()
+{
+	SetExtractorName(TEXT("Material"));
+}
 BPR_Extractor_Material::~BPR_Extractor_Material() {}
+
+void BPR_Extractor_Material::Process(UObject* SelectedObject, FBPR_ExtractedData& OutData)
+{
+	ProcessMaterial(SelectedObject, OutData);
+}
+
+bool BPR_Extractor_Material::CanHandleAsset(UObject* Asset) const
+{
+	return Cast<UMaterial>(Asset) != nullptr || Cast<UMaterialInstance>(Asset) != nullptr;
+}
 
 void BPR_Extractor_Material::ProcessMaterial(UObject* SelectedObject, FBPR_ExtractedData& OutData)
 {
@@ -70,6 +83,8 @@ void BPR_Extractor_Material::ProcessMaterial(UObject* SelectedObject, FBPR_Extra
 
 	OutData.Structure = FText::FromString(TmpStructure);
 	OutData.Graph = FText::FromString(TmpGraph);
+	OutData.Design = FText::FromString(TEXT("N/A"));
+	OutData.AssetType = EAssetType::Material;
 }
 
 
@@ -706,18 +721,3 @@ bool BPR_Extractor_Material::IsLogicalSourceExpression(
 }
 
 
-// Loggers
-void BPR_Extractor_Material::LogWarning(const FString& Msg)
-{
-	UE_LOG(LogTemp, Warning, TEXT("%s"), *Msg);
-}
-
-void BPR_Extractor_Material::LogError(const FString& Msg)
-{
-	UE_LOG(LogTemp, Error, TEXT("%s"), *Msg);
-}
-
-void BPR_Extractor_Material::LogMessage(const FString& Msg)
-{
-	UE_LOG(LogTemp, Log, TEXT("%s"), *Msg);
-}

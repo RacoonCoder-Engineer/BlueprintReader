@@ -3,7 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Core/BPR_Core.h"
+#include "Extractors/BPR_Extractor_Base.h"
 
 class UMaterial;
 class UMaterialInstance;
@@ -16,7 +16,7 @@ class UMaterialExpression;
 * - parameters
 * - dependency graph of Material Outputs
 */
-class BLUEPRINTREADER_API BPR_Extractor_Material
+class BLUEPRINTREADER_API BPR_Extractor_Material : public BPR_Extractor_Base
 {
 public:
 
@@ -29,14 +29,14 @@ public:
     /** Processes the selected object (Material or MaterialInstance) */
     void ProcessMaterial(UObject* SelectedObject, FBPR_ExtractedData& OutData);
 
+    // Extractor contract (BPR_Extractor_Base)
+    virtual void Process(UObject* SelectedObject, FBPR_ExtractedData& OutData) override;
+    virtual bool CanHandleAsset(UObject* Asset) const override;
+    virtual int32 GetPriority() const override { return 40; }
+
 private:
 
-    // ------------------------------- 
-    // Logging 
-    // -------------------------------
-    void LogMessage(const FString& Msg);
-    void LogWarning(const FString& Msg);
-    void LogError(const FString& Msg);
+    // Logging (LogMessage/LogWarning/LogError) inherited from BPR_Extractor_Base.
 
     // -------------------------------
     // Material structure (declarative part)
