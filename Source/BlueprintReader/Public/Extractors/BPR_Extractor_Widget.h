@@ -103,9 +103,8 @@ private:
     // -------------------------------
     // Logging
     // -------------------------------
-    void LogMessage(const FString& Msg);
-    void LogWarning(const FString& Msg);
-    void LogError(const FString& Msg);
+    // M2.5: LogMessage/LogWarning/LogError are inherited from BPR_Extractor_Base
+    // (route to LogBlueprintReader with the extractor name). No widget-local copies.
 
     // -------------------------------
     // M2.2: All Blueprint graph/variable helpers are now inherited from
@@ -134,9 +133,6 @@ private:
 
     /** Ключевые визуальные свойства виджета */
     void AppendWidgetProperties(UWidget* Widget, FString& OutText, int32 Indent);
-
-    /** Bindings (OnClicked, OnTextChanged и т.д.) */
-    void AppendWidgetBindings(UWidget* Widget, FString& OutText, int32 Indent);
 
     /** Анимации виджета */
     void AppendAnimations(UWidgetBlueprint* WidgetBP, FString& OutText);

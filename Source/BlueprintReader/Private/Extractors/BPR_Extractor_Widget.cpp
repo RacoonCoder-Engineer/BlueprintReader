@@ -130,23 +130,6 @@ int32 BPR_Extractor_Widget::GetPriority() const
 
 // M2: using base class methods directly via scope in calls below.
 
-//==============================================================================
-// Logging (переносим как есть)
-//==============================================================================
-void BPR_Extractor_Widget::LogMessage(const FString& Msg) 
-{ 
-    UE_LOG(LogTemp, Log, TEXT("[BPR_Extractor_Widget] %s"), *Msg); 
-}
-
-void BPR_Extractor_Widget::LogWarning(const FString& Msg) 
-{ 
-    UE_LOG(LogTemp, Warning, TEXT("[BPR_Extractor_Widget] %s"), *Msg); 
-}
-
-void BPR_Extractor_Widget::LogError(const FString& Msg) 
-{ 
-    UE_LOG(LogTemp, Error, TEXT("[BPR_Extractor_Widget] %s"), *Msg); 
-}
 
 //==============================================================================
 // Main entry point — адаптируем под виджет
@@ -174,7 +157,7 @@ void BPR_Extractor_Widget::ProcessWidget(UObject* SelectedObject, FBPR_Extracted
 
     FString TmpStructure;
     FString TmpGraph;
-    FString TmpDesign = FString::Printf(TEXT("# Design (Widget Tree) for %s\n\n"), *WidgetBP->GetName());
+    FString TmpDesign;   // header is emitted once by AppendWidgetTree (incl. recursion-depth info)
 
     // Use inherited methods from BPR_Extractor_Object (M2)
     BPR_Extractor_Object::AppendBlueprintInfo(WidgetBP, TmpStructure);
@@ -188,6 +171,7 @@ void BPR_Extractor_Widget::ProcessWidget(UObject* SelectedObject, FBPR_Extracted
     OutData.Structure = FText::FromString(TmpStructure);
     OutData.Graph     = FText::FromString(TmpGraph);
     OutData.Design    = FText::FromString(TmpDesign);
+    OutData.AssetType = EAssetType::Widget;   // drives RebuildTabsFromData() in the UI
 
     LogMessage(FString::Printf(TEXT("Widget extraction finished for %s"), *WidgetBP->GetName()));
 }
@@ -404,40 +388,6 @@ void BPR_Extractor_Widget::AppendWidgetProperties(UWidget* Widget, FString& OutT
 
     // 2. Специфические свойства в зависимости от типа виджета
     AppendWidgetTypeProperties(Widget, OutText, Indent);
-
-    OutText += TEXT("\n");
-}
-
-void BPR_Extractor_Widget::AppendWidgetBindings(UWidget* Widget, FString& OutText, int32 Indent)
-{
-    if (!Widget) return;
-
-    FString IndentStr = FString::ChrN(Indent * 2, ' ');
-    OutText += IndentStr + TEXT("Event Bindings (OnXXX):\n");
-
-    bool bHasAny = false;
-
-    for (TFieldIterator<FProperty> It(Widget->GetClass(), EFieldIteratorFlags::ExcludeSuper); It; ++It)
-    {
-        FProperty* Prop = *It;
-        if (FMulticastDelegateProperty* MulticastProp = CastField<FMulticastDelegateProperty>(Prop))
-        {
-            FName Name = Prop->GetFName();
-            FString NameStr = Name.ToString();
-
-            // Фильтр: только типичные события виджетов
-            if (NameStr.StartsWith(TEXT("On")))
-            {
-                bHasAny = true;
-                OutText += IndentStr + FString::Printf(TEXT("  - %s (dynamic multicast delegate)\n"), *CleanName(NameStr));
-            }
-        }
-    }
-
-    if (!bHasAny)
-    {
-        OutText += IndentStr + TEXT("  - No event delegates found on this widget type\n");
-    }
 
     OutText += TEXT("\n");
 }

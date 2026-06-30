@@ -43,7 +43,11 @@ Extractors are plain C++ (not UObject), owned via `TSharedPtr` in Core.
 | M5 — CI, smoke tests, Fab v0.2 | ⏳ |
 
 **Current branch:** `WidgetRefactoring`  
-**M2 progress:** Widget inherits `BPR_Extractor_Object` (M2.1 ✅). `BPR_Extractor_WidgetAdapter` removed (M2.6 ✅). Duplicate graph/variable helper stack (15 dead methods, ~730 lines) removed from `BPR_Extractor_Widget.cpp`/`.h` (M2.2 ✅, build verified) — graph extraction now owned solely by `BPR_Extractor_Object`. Widget.cpp ~3445 → 2715 lines. `CleanName` kept widget-local (only live duplicate; base-parity dedup pending). Next: M2.3 Bindings, M2.4 custom WBP text, M2.5 `LogBlueprintReader` instead of `LogTemp`.
+**M2 progress:** M2.1 ✅ (Widget inherits `BPR_Extractor_Object`), M2.6 ✅ (WidgetAdapter removed), M2.2 ✅ (graph/variable dup removed, ~730 lines), M2.3 ✅ (event→handler bindings via `AppendWidgetEventBindings`/`K2Node_ComponentBoundEvent`, already wired; dead old `AppendWidgetBindings` removed), M2.5 ✅ (Widget logging now via inherited base → `LogBlueprintReader`). Widget.cpp ~3445 → 2660 lines. All builds verified on UE 5.7.
+**M2.4 🔄 (remaining):** Custom `WBP_*` (UUserWidget) extraction. Recursion into a nested `UserWidget->WidgetTree` already exists (`ProcessWidgetHierarchy`, ~line 247) BUT only fires when the nested instance's `WidgetTree` is populated — for many nested WBP instances it's null at asset level, so only the type prints. Closing the gap needs resolving the child's WidgetBlueprint from its GeneratedClass + **editor validation on a real nested WBP**.
+**Bugfixes (editor-validated):** `ProcessWidget` now sets `OutData.AssetType = EAssetType::Widget` — was unset (Unknown=0), so the UI `RebuildTabsFromData()` switch fell through to "unsupported, type 0" for every widget. Duplicate Design title header removed (`TmpDesign` no longer pre-seeds a `#` header; `AppendWidgetTree` emits the single `##` one). Design tab confirmed populated in-editor.
+
+**Follow-ups:** `CleanName` base-parity dedup (only widget-local duplicate left); module-wide `LogTemp`→`LogBlueprintReader` in non-Widget files (UI, Material, ActorComponent); resolve brush/image `ResourceObject` to an asset name instead of a raw GUID in Design output (M4 output-quality); same `AssetType` mis-wire latent in `BPR_Extractor_Interface` (sets `Blueprint` instead of `InterfaceBP`).
 
 ## Working rules
 
