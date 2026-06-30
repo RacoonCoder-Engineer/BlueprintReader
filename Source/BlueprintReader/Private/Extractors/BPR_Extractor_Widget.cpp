@@ -1016,10 +1016,38 @@ void BPR_Extractor_Widget::HandleUnknownWidget(UWidget* Widget, FString& OutText
         OutText += IndentStr + FString::Printf(TEXT("    - Name: %s\n"), *WidgetName);
     }
 
-    // Если это UserWidget — покажем, что у него есть свой WidgetTree
+    // Если это UserWidget — покажем тип и вытащим его настроенные свойства
     if (Widget->IsA<UUserWidget>())
     {
         OutText += IndentStr + TEXT("    - Type: Custom UserWidget (has internal Widget Tree)\n");
+
+        // M2.4: dump exposed/instance-configured properties of the nested WBP.
+        // Per-instance values (e.g. a label's text) live as overrides on the instance,
+        // not in the child's archetype tree — read them straight off the instance.
+        // IsUserVariable / GetPropertyDefaultValue are inherited from BPR_Extractor_Object.
+        bool bWroteExposedHeader = false;
+        for (TFieldIterator<FProperty> It(Widget->GetClass(), EFieldIteratorFlags::ExcludeSuper); It; ++It)
+        {
+            FProperty* Prop = *It;
+            if (!Prop || !IsUserVariable(Prop))
+            {
+                continue;
+            }
+
+            const FString Value = GetPropertyDefaultValue(Prop, Widget);
+            if (Value == TEXT("None"))
+            {
+                continue;   // unset / trivial default — skip to keep the output focused
+            }
+
+            if (!bWroteExposedHeader)
+            {
+                OutText += IndentStr + TEXT("    - Exposed Properties (set on this instance):\n");
+                bWroteExposedHeader = true;
+            }
+            OutText += IndentStr + FString::Printf(TEXT("      - %s: %s\n"),
+                *CleanName(Prop->GetName()), *Value);
+        }
     }
     else
     {

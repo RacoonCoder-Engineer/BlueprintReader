@@ -37,17 +37,20 @@ Extractors are plain C++ (not UObject), owned via `TSharedPtr` in Core.
 | Milestone | Status |
 |-----------|--------|
 | M1 — Core factory wired, build fixed | ✅ Done (2026-06-27) |
-| M2 — Widget as first-class `BPR_Extractor_Object` child | 🔄 In progress |
+| M2 — Widget as first-class `BPR_Extractor_Object` child | ✅ Done (2026-06-30) |
 | M3 — Material/MaterialFunction in hierarchy | ⏳ |
 | M4 — UX: settings, file export | ⏳ |
 | M5 — CI, smoke tests, Fab v0.2 | ⏳ |
 
 **Current branch:** `WidgetRefactoring`  
 **M2 progress:** M2.1 ✅ (Widget inherits `BPR_Extractor_Object`), M2.6 ✅ (WidgetAdapter removed), M2.2 ✅ (graph/variable dup removed, ~730 lines), M2.3 ✅ (event→handler bindings via `AppendWidgetEventBindings`/`K2Node_ComponentBoundEvent`, already wired; dead old `AppendWidgetBindings` removed), M2.5 ✅ (Widget logging now via inherited base → `LogBlueprintReader`). Widget.cpp ~3445 → 2660 lines. All builds verified on UE 5.7.
-**M2.4 🔄 (remaining):** Custom `WBP_*` (UUserWidget) extraction. Recursion into a nested `UserWidget->WidgetTree` already exists (`ProcessWidgetHierarchy`, ~line 247) BUT only fires when the nested instance's `WidgetTree` is populated — for many nested WBP instances it's null at asset level, so only the type prints. Closing the gap needs resolving the child's WidgetBlueprint from its GeneratedClass + **editor validation on a real nested WBP**.
-**Bugfixes (editor-validated):** `ProcessWidget` now sets `OutData.AssetType = EAssetType::Widget` — was unset (Unknown=0), so the UI `RebuildTabsFromData()` switch fell through to "unsupported, type 0" for every widget. Duplicate Design title header removed (`TmpDesign` no longer pre-seeds a `#` header; `AppendWidgetTree` emits the single `##` one). Design tab confirmed populated in-editor.
+**M2.4 ✅ (editor-validated):** Custom `WBP_*` (UUserWidget) extraction. Nested WBP instances have null `WidgetTree` at asset level, so `ProcessWidgetHierarchy`'s recursion (~line 248) doesn't fire. Approach A in `HandleUnknownWidget` (~line 1020): for a `UUserWidget`, iterate its own exposed user variables (`IsUserVariable`) and print non-default instance values (`GetPropertyDefaultValue(Prop, Widget)`) under "Exposed Properties (set on this instance)". Validated: nested labels now surface their actual text (e.g. `In Text: Clan`) and config (`MaxCharToEnter`, ...) — the per-instance values an LLM needs.
 
-**Follow-ups:** `CleanName` base-parity dedup (only widget-local duplicate left); module-wide `LogTemp`→`LogBlueprintReader` in non-Widget files (UI, Material, ActorComponent); resolve brush/image `ResourceObject` to an asset name instead of a raw GUID in Design output (M4 output-quality); same `AssetType` mis-wire latent in `BPR_Extractor_Interface` (sets `Blueprint` instead of `InterfaceBP`).
+**M2 is complete.** Next milestone: **M3** (Material / MaterialFunction into the hierarchy; re-enable their registration in `BPR_Core.cpp` — currently commented out, along with ActorComponent).
+
+**Bugfixes (editor-validated):** `ProcessWidget` now sets `OutData.AssetType = EAssetType::Widget` — was unset (Unknown=0), so the UI `RebuildTabsFromData()` switch fell through to "unsupported, type 0" for every widget. `BPR_Extractor_Interface` now sets `InterfaceBP` (was `Blueprint`, which has no switch case → same "unsupported" symptom). Duplicate Design title header removed.
+
+**Follow-ups:** `CleanName` base-parity dedup (only widget-local duplicate left); module-wide `LogTemp`→`LogBlueprintReader` in non-Widget files (UI, Material, ActorComponent); in Design output, resolve brush/image `ResourceObject` to an asset name instead of a raw GUID, and suppress all-zero/transparent color values like `BackgroundColor:(0,0,0,0)` (M4 output-quality).
 
 ## Working rules
 

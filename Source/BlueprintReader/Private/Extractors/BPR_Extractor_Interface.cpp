@@ -34,7 +34,7 @@ void BPR_Extractor_Interface::Process(UObject* SelectedObject, FBPR_ExtractedDat
     OutData.Structure = FText::FromString(Result);
     OutData.Graph     = FText::FromString(TEXT("N/A"));   // Interfaces don't have graphs in the same way
     OutData.Design    = FText::FromString(TEXT("N/A"));
-    OutData.AssetType = EAssetType::Blueprint;            // или можно добавить отдельный тип позже
+    OutData.AssetType = EAssetType::InterfaceBP;          // matches RebuildTabsFromData() switch case
 }
 
 void BPR_Extractor_Interface::Extract(UObject* Asset, FBPR_ExtractedData& OutData)
