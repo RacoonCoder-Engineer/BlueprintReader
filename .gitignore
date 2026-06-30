@@ -72,3 +72,12 @@ Plugins/**/Intermediate/*
 
 # Cache files for the editor to use
 DerivedDataCache/*
+
+# Internal documentation (Russian, Obsidian vault — local only)
+Docs/RU/
+
+# AI workspace (Russian instructions, local only)
+.grok/Private/
+
+# Grok MCP descriptors (local harness)
+mcps/

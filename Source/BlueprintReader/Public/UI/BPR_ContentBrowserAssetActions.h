@@ -32,4 +32,7 @@ private:
 private:
     TWeakPtr<BPR_Core> CoreInstance;
     TWeakPtr<BPR_OutputWindow> OutputWindow;
+
+    /** Persistent instance for InfoWindow to prevent immediate destruction */
+    TSharedPtr<BPR_InfoWindow> InfoWindow;
 };

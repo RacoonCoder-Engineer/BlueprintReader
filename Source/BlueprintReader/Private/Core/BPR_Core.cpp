@@ -24,6 +24,8 @@
 #include "Extractors/BPR_Extractor_MaterialFunction.h"
 #include "Extractors/BPR_Extractor_Enum.h"
 #include "Extractors/BPR_Extractor_Structure.h"
+
+// M2: Widget is now proper BPR_Extractor_Object subclass (no adapter needed)
 //#include "Extractors/BPR_Extractor_Blueprint.h"   // ← для обычных Blueprint Class
 
 BPR_Core::BPR_Core() = default;
@@ -33,29 +35,40 @@ void BPR_Core::RegisterAllExtractors()
 {
     Extractors.Empty();
 
-    // Register from most specific to most general (priority will also be considered)
-    Extractors.Add(MakeUnique<BPR_Extractor_Actor>());
-    Extractors.Add(MakeUnique<BPR_Extractor_ActorComponent>());
-    Extractors.Add(MakeUnique<BPR_Extractor_Widget>());
-    Extractors.Add(MakeUnique<BPR_Extractor_Interface>());
-    Extractors.Add(MakeUnique<BPR_Extractor_Material>());
-    Extractors.Add(MakeUnique<BPR_Extractor_MaterialFunction>());
-    Extractors.Add(MakeUnique<BPR_Extractor_Enum>());
-    Extractors.Add(MakeUnique<BPR_Extractor_Structure>());
+    // Register from most specific to most general (priority will also be considered).
+    // NOTE (M1): Only register extractors that properly inherit BPR_Extractor_Base.
+    // Legacy (Widget, Material, ActorComponent, MaterialFunction) will be added via adapters in Phase 3.
+    Extractors.Add(MakeShared<BPR_Extractor_Actor>());
+    // Extractors.Add(MakeShared<BPR_Extractor_ActorComponent>()); // TODO: adapter or inheritance
+    Extractors.Add(MakeShared<BPR_Extractor_Widget>());   // M2: now properly inherits from Object
+    Extractors.Add(MakeShared<BPR_Extractor_Interface>());
+    // Extractors.Add(MakeShared<BPR_Extractor_Material>());       // TODO: adapter
+    // Extractors.Add(MakeShared<BPR_Extractor_MaterialFunction>()); // TODO: adapter
+    Extractors.Add(MakeShared<BPR_Extractor_Enum>());
+    Extractors.Add(MakeShared<BPR_Extractor_Structure>());
     //Extractors.Add(MakeUnique<BPR_Extractor_Blueprint>());   // обычные Blueprint Class
 
     // Sort by priority (highest first)
-    Extractors.Sort([](const TUniquePtr<BPR_Extractor_Base>& A, const TUniquePtr<BPR_Extractor_Base>& B)
+    Extractors.Sort([](const TSharedPtr<BPR_Extractor_Base>& A, const TSharedPtr<BPR_Extractor_Base>& B)
     {
         return A->GetPriority() > B->GetPriority();
     });
 
     UE_LOG(LogBlueprintReader, Log, TEXT("BPR_Core: Registered %d extractors"), Extractors.Num());
+    for (const auto& Ex : Extractors)
+    {
+        UE_LOG(LogBlueprintReader, Verbose, TEXT("  - %s (priority %d)"), 
+               *Ex->GetExtractorName(), Ex->GetPriority());
+    }
 }
 
 bool BPR_Core::IsSupportedAsset(UObject* Asset) const
 {
-    return FindSuitableExtractor(Asset) != nullptr;
+    bool result = FindSuitableExtractor(Asset) != nullptr;
+    UE_LOG(LogBlueprintReader, Verbose, TEXT("IsSupportedAsset(%s) -> %s"), 
+           Asset ? *Asset->GetName() : TEXT("NULL"), 
+           result ? TEXT("true") : TEXT("false"));
+    return result;
 }
 
 void BPR_Core::ExtractAsset(UObject* Asset, FBPR_ExtractedData& OutData)
@@ -86,10 +99,12 @@ void BPR_Core::ExtractAsset(UObject* Asset, FBPR_ExtractedData& OutData)
 
 BPR_Extractor_Base* BPR_Core::FindSuitableExtractor(UObject* Asset) const
 {
-    for (const TUniquePtr<BPR_Extractor_Base>& Extractor : Extractors)
+    for (const TSharedPtr<BPR_Extractor_Base>& Extractor : Extractors)
     {
         if (Extractor->CanHandleAsset(Asset))
         {
+            UE_LOG(LogBlueprintReader, Log, TEXT("FindSuitableExtractor chose %s for %s"), 
+                   *Extractor->GetExtractorName(), Asset ? *Asset->GetName() : TEXT("NULL"));
             return Extractor.Get();
         }
     }

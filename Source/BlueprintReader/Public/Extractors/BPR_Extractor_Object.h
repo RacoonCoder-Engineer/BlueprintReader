@@ -36,8 +36,8 @@ public:
     /** Main entry point */
     virtual void Process(UObject* SelectedObject, FBPR_ExtractedData& OutData) override;
 
-    /** Cleaner API (recommended for future) */
-    virtual FString Extract(const UObject* Asset) override;
+    /** Cleaner API (recommended for future) - now matches Base via bridge */
+    virtual void Extract(UObject* Asset, FBPR_ExtractedData& OutData) override;
 
 protected:
     

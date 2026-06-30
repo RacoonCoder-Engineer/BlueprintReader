@@ -2,10 +2,20 @@
 
 #include "Extractors/BPR_Extractor_Structure.h"
 #include "UObject/UnrealType.h"
+#include "Engine/UserDefinedStruct.h"
 
 BPR_Extractor_Structure::BPR_Extractor_Structure()
 {
 	SetExtractorName(TEXT("Structure"));
+}
+
+bool BPR_Extractor_Structure::CanHandleAsset(UObject* Asset) const
+{
+    if (UClass* Cls = Asset ? Asset->GetClass() : nullptr)
+    {
+        return Cls->GetName() == TEXT("UserDefinedStruct");
+    }
+    return false;
 }
 
 void BPR_Extractor_Structure::Process(UObject* SelectedObject, FBPR_ExtractedData& OutData)

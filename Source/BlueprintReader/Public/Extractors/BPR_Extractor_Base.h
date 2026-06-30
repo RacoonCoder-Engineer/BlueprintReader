@@ -31,17 +31,22 @@ public:
     virtual void Process(UObject* SelectedObject, FBPR_ExtractedData& OutData) = 0;
 
     /** 
-     * Новый рекомендуемый API 
+     * Новый рекомендуемый API.
+     * По умолчанию делегирует в Process() для совместимости на период миграции (bridge).
      */
-    virtual void Extract(UObject* Asset, FBPR_ExtractedData& OutData) = 0;
+    virtual void Extract(UObject* Asset, FBPR_ExtractedData& OutData) { Process(Asset, OutData); }
 
     /** 
      * Determines if this extractor can handle the given asset.
      * Override in derived classes to implement type-specific logic.
+     * Default returns false (base handles nothing).
      * 
      * @return true if this extractor supports the asset
      */
-    virtual bool CanHandleAsset(UObject* Asset) const = 0;
+    virtual bool CanHandleAsset(UObject* Asset) const { return false; }
+
+    /** Priority for extractor selection (higher = more specific, checked first). */
+    virtual int32 GetPriority() const { return 0; }
 
 protected:
     // ===================================================================

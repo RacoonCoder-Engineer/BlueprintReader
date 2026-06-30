@@ -18,8 +18,11 @@
 //==============================================================================
 void FBlueprintReaderModule::StartupModule()
 {
+    UE_LOG(LogBlueprintReader, Log, TEXT("FBlueprintReaderModule::StartupModule - Starting BlueprintReader plugin"));
+
     // Создаём Core как shared (чтобы TWeakPtr в actions мог его держать)
     CoreInstance = MakeShared<BPR_Core>();
+    CoreInstance->RegisterAllExtractors();  // M1: register extractors on startup
 
 #if WITH_EDITOR
     // Окно вывода
@@ -28,12 +31,14 @@ void FBlueprintReaderModule::StartupModule()
     // Actions в Content Browser
     ContentBrowserActions = MakeShared<FBPR_ContentBrowserAssetActions>();
 
-    // Передаём зависимости в actions (это решает проблему "invalid or expired")
+    // Передаём зависимости в actions (это решает проблему "invalid или expired")
     ContentBrowserActions->SetCore(CoreInstance);
     ContentBrowserActions->SetOutputWindow(OutputWindow);
 
     // Регистрируем меню
     ContentBrowserActions->Register();
+
+    UE_LOG(LogBlueprintReader, Log, TEXT("FBlueprintReaderModule::StartupModule - Core registered, UI actions registered successfully"));
 #endif
 }
 

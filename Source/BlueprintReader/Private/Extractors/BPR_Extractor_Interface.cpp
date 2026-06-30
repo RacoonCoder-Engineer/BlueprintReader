@@ -37,10 +37,19 @@ void BPR_Extractor_Interface::Process(UObject* SelectedObject, FBPR_ExtractedDat
     OutData.AssetType = EAssetType::Blueprint;            // или можно добавить отдельный тип позже
 }
 
-FString BPR_Extractor_Interface::Extract(const UObject* Asset)
+void BPR_Extractor_Interface::Extract(UObject* Asset, FBPR_ExtractedData& OutData)
 {
-    // Пока заглушка, как и в других экстракторах
-    return FString();
+    // Delegate to Process (the real implementation fills OutData).
+    Process(Asset, OutData);
+}
+
+bool BPR_Extractor_Interface::CanHandleAsset(UObject* Asset) const
+{
+    if (UBlueprint* BP = Cast<UBlueprint>(Asset))
+    {
+        return BP->BlueprintType == BPTYPE_Interface;
+    }
+    return false;
 }
 
 // ===================================================================

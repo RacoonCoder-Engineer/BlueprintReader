@@ -51,7 +51,15 @@ void FBPR_ContentBrowserAssetActions::OnShowBPAsMDClicked()
 {
 #if WITH_EDITOR
     UObject* SelectedObject = GetSelectedAsset();
-    if (!SelectedObject) return;
+    if (!SelectedObject)
+    {
+        UE_LOG(LogTemp, Warning, TEXT("BPR: OnShowBPAsMDClicked - No asset selected"));
+        return;
+    }
+
+    UE_LOG(LogTemp, Log, TEXT("BPR: OnShowBPAsMDClicked - Selected: %s (%s)"), 
+           *SelectedObject->GetName(), 
+           *SelectedObject->GetClass()->GetName());
 
     ExecuteForObject(SelectedObject);
 #endif
@@ -62,6 +70,8 @@ void FBPR_ContentBrowserAssetActions::OnShowBPAsMDClicked()
 //==============================================================================
 void FBPR_ContentBrowserAssetActions::ExecuteForObject(UObject* SelectedObject)
 {
+    UE_LOG(LogTemp, Log, TEXT("BPR: ExecuteForObject started for %s"), *SelectedObject->GetName());
+
     // Получаем сильную ссылку на Core
     TSharedPtr<BPR_Core> Core = CoreInstance.Pin();
     if (!Core.IsValid())
@@ -70,7 +80,12 @@ void FBPR_ContentBrowserAssetActions::ExecuteForObject(UObject* SelectedObject)
         return;
     }
 
-    if (!Core->IsSupportedAsset(SelectedObject))
+    bool bSupported = Core->IsSupportedAsset(SelectedObject);
+    UE_LOG(LogTemp, Log, TEXT("BPR: IsSupportedAsset returned %s for %s"), 
+           bSupported ? TEXT("TRUE") : TEXT("FALSE"),
+           *SelectedObject->GetName());
+
+    if (!bSupported)
     {
         auto Info = Core->GetUnsupportedAssetInfo();
 
@@ -81,8 +96,13 @@ void FBPR_ContentBrowserAssetActions::ExecuteForObject(UObject* SelectedObject)
         Params.OptionalURL        = Info.GitHubURL;
         Params.OptionalButtonText = Info.ButtonText;
 
-        auto InfoWin = MakeShared<BPR_InfoWindow>();
-        InfoWin->Open(Params);
+        UE_LOG(LogTemp, Log, TEXT("BPR: Asset not supported - opening InfoWindow"));
+
+        if (!InfoWindow.IsValid())
+        {
+            InfoWindow = MakeShared<BPR_InfoWindow>();
+        }
+        InfoWindow->Open(Params);
 
         return;
     }
@@ -105,10 +125,11 @@ void FBPR_ContentBrowserAssetActions::ExecuteForObject(UObject* SelectedObject)
         return;
     }
 
-    // Экстракция и передача данных
-    Core->ExtractorSelector(SelectedObject);
-
-    const auto& Data = Core->GetTextData();
+    // Экстракция через новый Core API (M1 fix)
+    FBPR_ExtractedData Data;
+    Core->ExtractAsset(SelectedObject, Data);
+    UE_LOG(LogTemp, Log, TEXT("BPR: ExtractAsset completed. Structure len: %d, Graph len: %d"), 
+           Data.Structure.ToString().Len(), Data.Graph.ToString().Len());
     TabSwitcher->SetData(Data);
 }
 

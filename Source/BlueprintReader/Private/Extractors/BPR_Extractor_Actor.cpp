@@ -52,6 +52,18 @@ void BPR_Extractor_Actor::Process(UObject* SelectedObject, FBPR_ExtractedData& O
 	LogMessage(FString::Printf(TEXT("Actor extraction completed for %s"), *Blueprint->GetName()));
 }
 
+bool BPR_Extractor_Actor::CanHandleAsset(UObject* Asset) const
+{
+    if (UBlueprint* Blueprint = Cast<UBlueprint>(Asset))
+    {
+        if (UClass* Generated = Blueprint->GeneratedClass)
+        {
+            return Generated->IsChildOf(AActor::StaticClass());
+        }
+    }
+    return false;
+}
+
 // ===================================================================
 // Actor-specific Structure
 // ===================================================================

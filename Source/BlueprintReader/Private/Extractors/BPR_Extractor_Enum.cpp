@@ -2,10 +2,16 @@
 
 #include "Extractors/BPR_Extractor_Enum.h"
 #include "UObject/UnrealType.h"
+#include "Engine/UserDefinedEnum.h"
 
 BPR_Extractor_Enum::BPR_Extractor_Enum()
 {
 	SetExtractorName(TEXT("Enum"));
+}
+
+bool BPR_Extractor_Enum::CanHandleAsset(UObject* Asset) const
+{
+    return Cast<UUserDefinedEnum>(Asset) != nullptr;
 }
 
 void BPR_Extractor_Enum::Process(UObject* SelectedObject, FBPR_ExtractedData& OutData)

@@ -23,8 +23,11 @@ public:
 	/** Main entry point used by current menu system */
 	virtual void Process(UObject* SelectedObject, FBPR_ExtractedData& OutData) override;
 
-	/** Cleaner API for future use */
-	virtual FString Extract(const UObject* Asset) override;
+	/** Cleaner API for future use - now matches Base via bridge */
+	virtual void Extract(UObject* Asset, FBPR_ExtractedData& OutData) override;
+
+	virtual bool CanHandleAsset(UObject* Asset) const override;
+	virtual int32 GetPriority() const override { return 70; }
 
 protected:
 	/** Extracts interface functions and appends them to OutText */

@@ -13,6 +13,9 @@ public:
 	/** Main entry point used by BPR_Core */
 	virtual void Process(UObject* SelectedObject, FBPR_ExtractedData& OutData) override;
 
+	virtual bool CanHandleAsset(UObject* Asset) const override;
+	virtual int32 GetPriority() const override { return 50; }
+
 private:
 	/** Appends list of all enum entries as a markdown table */
 	static void AppendEnumEntries(const UEnum* Enum, FString& OutText);

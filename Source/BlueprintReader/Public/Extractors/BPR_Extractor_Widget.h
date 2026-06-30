@@ -5,7 +5,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Core/BPR_Core.h"
+#include "Extractors/BPR_Extractor_Object.h"
 #include "WidgetBlueprint.h"
 #include "Components/Widget.h"
 #include "Styling/SlateColor.h"         
@@ -71,14 +71,15 @@ class UK2Node_FunctionResult;
 
 /**
  * Extractor for Widget Blueprint (UMG).
- * Collects hierarchy (WidgetTree), slots, properties, bindings, animations, variables and graphs.
+ * Inherits from BPR_Extractor_Object to reuse graph/variable logic.
+ * Collects hierarchy (WidgetTree), slots, properties, bindings, animations.
  * Output goes to FBPR_ExtractedData (Structure, Graph, Design).
  */
-class BLUEPRINTREADER_API BPR_Extractor_Widget
+class BLUEPRINTREADER_API BPR_Extractor_Widget : public BPR_Extractor_Object
 {
 public:
     BPR_Extractor_Widget();
-    ~BPR_Extractor_Widget();
+    virtual ~BPR_Extractor_Widget() override;
 
     // --------------------------------
     // Main entry point
@@ -92,6 +93,12 @@ public:
     /** Возвращает текущие настройки рекурсии (для отладки или чтения) */
     const FWidgetRecursionSettings& GetRecursionSettings() const;
 
+    // Contract from BPR_Extractor_Base / Object (M2)
+    virtual void Process(UObject* SelectedObject, FBPR_ExtractedData& OutData) override;
+    virtual void Extract(UObject* Asset, FBPR_ExtractedData& OutData) override;
+    virtual bool CanHandleAsset(UObject* Asset) const override;
+    virtual int32 GetPriority() const override;
+
 private:
     // -------------------------------
     // Logging
@@ -101,38 +108,11 @@ private:
     void LogError(const FString& Msg);
 
     // -------------------------------
-    // Общие методы для любого Blueprint (копируем/адаптируем из Actor)
+    // M2.2: All Blueprint graph/variable helpers are now inherited from
+    // BPR_Extractor_Object. Only CleanName remains widget-local (used by the
+    // binding output below; base CleanName parity check is a pending follow-up).
     // -------------------------------
-    void AppendBlueprintInfo(UBlueprint* Blueprint, FString& OutText);
-    void AppendVariables(UBlueprint* Blueprint, FString& OutText);
-    void AppendGraphs(UBlueprint* Blueprint, FString& OutText);
-
-    // Helpers для свойств
-    FString GetPropertyDefaultValue(FProperty* Property, UObject* Object);
-    FString GetPropertyTypeDetailed(FProperty* Property);
-    void AppendStructFields(FStructProperty* StructProp, FString& OutText, int32 Indent = 0);
-    bool IsUserVariable(FProperty* Property);
-
-    // Графы и ноды 
-    void AppendGraphSequence(UEdGraph* Graph, FString& OutExecText, FString& OutDataText);
-    void ProcessNodeSequence(
-        UEdGraphNode* Node,
-        int32 IndentLevel,
-        TSet<UEdGraphNode*>& Visited,
-        FString& OutExecText,
-        FString& OutDataText);
-
-    UK2Node_FunctionEntry* FindFunctionEntryNodeInGraph(UEdGraph* Graph);
-    UK2Node_FunctionResult* FindFunctionResultNodeInGraph(UEdGraph* Graph);
-    FString GetFunctionSignature(UEdGraph* Graph);
-    FString GetMacroSignature(UEdGraph* Graph);
-
-    FString GetReadableNodeName(UEdGraphNode* Node);
-    FString GetPinDetails(UEdGraphPin* Pin);
-    FString GetPinDisplayName(UEdGraphPin* Pin);
     FString CleanName(const FString& RawName);
-    bool IsComputationalNode(UEdGraphNode* Node);
-    bool HasExecInput(UEdGraphNode* Node);
 
     // -------------------------------
     // Специфичные для Widget новые методы

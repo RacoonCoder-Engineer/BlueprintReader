@@ -77,10 +77,11 @@ void BPR_Extractor_Object::Process(UObject* SelectedObject, FBPR_ExtractedData& 
     CurrentBlueprint = nullptr;
 }
 
-FString BPR_Extractor_Object::Extract(const UObject* Asset)
+void BPR_Extractor_Object::Extract(UObject* Asset, FBPR_ExtractedData& OutData)
 {
-    // Пока просто заглушка, чтобы не ломать интерфейс
-    return FString();
+    // Delegate to Process (the real implementation). Base default would do the same,
+    // but we override explicitly here.
+    Process(Asset, OutData);
 }
 
 // ===================================================================

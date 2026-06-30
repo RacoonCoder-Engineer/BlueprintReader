@@ -44,5 +44,5 @@ private:
 	BPR_Extractor_Base* FindSuitableExtractor(UObject* Asset) const;
 
 	/** List of all registered extractors, sorted by priority (highest first) */
-	TArray<TUniquePtr<BPR_Extractor_Base>> Extractors;
+	TArray<TSharedPtr<BPR_Extractor_Base>> Extractors;
 };
