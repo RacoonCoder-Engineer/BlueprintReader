@@ -1,7 +1,7 @@
 {
 	"FileVersion": 3,
-	"Version": 1,
-	"VersionName": "0.1",
+	"Version": 2,
+	"VersionName": "0.2.0",
 	"EngineVersion": "5.7.0",
 	"FriendlyName": "BlueprintReader",
 	"Description": "Extracts Blueprint structure, graph and widget design data into Markdown for AI assistants and documentation. Single-source, supports Unreal Engine 5.7 and 5.8 (EngineVersion managed at packaging time).",
