@@ -2,6 +2,7 @@
 
 #include "Extractors/BPR_Extractor_Material.h"
 #include "Core/BPR_Core.h"
+#include "Core/BPR_Compat.h"   // M6: plumbing for future 5.7/5.8 shims (expression DAG walk below)
 #include "Materials/MaterialExpression.h"
 #include "Materials/MaterialExpressionTextureSample.h"
 #include "Materials/MaterialExpressionScalarParameter.h"

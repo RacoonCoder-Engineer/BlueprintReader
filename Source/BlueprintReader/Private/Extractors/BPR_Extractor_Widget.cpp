@@ -41,6 +41,7 @@
 
 #include "Extractors/BPR_Extractor_Widget.h"
 #include "Core/BPR_Settings.h"   // M4.1: user-configured recursion depth
+#include "Core/BPR_Compat.h"     // M6: plumbing for future 5.7/5.8 shims
 
 // Общие инклюды из Actor-экстрактора
 #include "Engine/Blueprint.h"
@@ -2064,24 +2065,34 @@ void BPR_Extractor_Widget::HandleSizeBoxProperties(USizeBox* SizeBox, FString& O
     OutText += IndentStr + FString::Printf(TEXT("    - Max Desired Height: %.1f\n"), 
         SizeBox->GetMaxDesiredHeight());
 
-    // Флаги управления размерами - ToDo проверь не устарели ли прямые доступы к переменным
+    // M6.0a: bOverride_* fields are deprecated direct-field access (UE 5.8 forward-compat warning).
+    // Read via reflection instead, mirroring the ListView/TreeView AppendBoolFlag pattern below.
+    auto ReadOverrideFlag = [SizeBox](const TCHAR* PropName) -> bool
+    {
+        if (const FBoolProperty* Prop = FindFProperty<FBoolProperty>(USizeBox::StaticClass(), PropName))
+        {
+            return Prop->GetPropertyValue_InContainer(SizeBox);
+        }
+        return false;
+    };
+
     OutText += IndentStr + FString::Printf(TEXT("    - bOverride_WidthOverride: %s\n"),
-        SizeBox->bOverride_WidthOverride ? TEXT("True") : TEXT("False"));
+        ReadOverrideFlag(TEXT("bOverride_WidthOverride")) ? TEXT("True") : TEXT("False"));
 
     OutText += IndentStr + FString::Printf(TEXT("    - bOverride_HeightOverride: %s\n"),
-        SizeBox->bOverride_HeightOverride ? TEXT("True") : TEXT("False"));
+        ReadOverrideFlag(TEXT("bOverride_HeightOverride")) ? TEXT("True") : TEXT("False"));
 
     OutText += IndentStr + FString::Printf(TEXT("    - bOverride_MinDesiredWidth: %s\n"),
-        SizeBox->bOverride_MinDesiredWidth ? TEXT("True") : TEXT("False"));
+        ReadOverrideFlag(TEXT("bOverride_MinDesiredWidth")) ? TEXT("True") : TEXT("False"));
 
     OutText += IndentStr + FString::Printf(TEXT("    - bOverride_MinDesiredHeight: %s\n"),
-        SizeBox->bOverride_MinDesiredHeight ? TEXT("True") : TEXT("False"));
+        ReadOverrideFlag(TEXT("bOverride_MinDesiredHeight")) ? TEXT("True") : TEXT("False"));
 
     OutText += IndentStr + FString::Printf(TEXT("    - bOverride_MaxDesiredWidth: %s\n"),
-        SizeBox->bOverride_MaxDesiredWidth ? TEXT("True") : TEXT("False"));
+        ReadOverrideFlag(TEXT("bOverride_MaxDesiredWidth")) ? TEXT("True") : TEXT("False"));
 
     OutText += IndentStr + FString::Printf(TEXT("    - bOverride_MaxDesiredHeight: %s\n"),
-        SizeBox->bOverride_MaxDesiredHeight ? TEXT("True") : TEXT("False"));
+        ReadOverrideFlag(TEXT("bOverride_MaxDesiredHeight")) ? TEXT("True") : TEXT("False"));
 
     // Clipping и opacity
     EWidgetClipping ClippingMode = SizeBox->GetClipping();

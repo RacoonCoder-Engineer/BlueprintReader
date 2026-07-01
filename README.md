@@ -40,9 +40,12 @@ Copy text (Ctrl+A, Ctrl+C) and paste to AI assistant
 
 ## Supported Unreal Engine Versions
 
-- Unreal Engine 5.7+
+- Unreal Engine 5.7
+- Unreal Engine 5.8
 
-*(Earlier versions not tested, may work with minor modifications)*
+Single source tree (M6). The plugin builds and works on both.
+
+**Note on EngineVersion:** The `"EngineVersion"` field is intentionally omitted in the source `.uplugin`. This prevents "plugin for older engine" warnings when the source is used in either 5.7 or 5.8 projects. When preparing packages for Fab, set the correct value (`"5.7.0"` or `"5.8.0"`) before running `RunUAT BuildPlugin` for that engine.
 
 ## Known Limitations
 

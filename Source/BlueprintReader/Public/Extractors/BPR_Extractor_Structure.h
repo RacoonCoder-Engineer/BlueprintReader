@@ -4,7 +4,9 @@
 
 #include "CoreMinimal.h"
 #include "Extractors/BPR_Extractor_Base.h"
-#include "Engine/UserDefinedStruct.h"
+#include "StructUtils/UserDefinedStruct.h"   // M6: canonical CoreUObject path — the old
+                                              // Engine/UserDefinedStruct.h forwarder was removed in UE 5.8;
+                                              // this path exists unchanged in both 5.7 and 5.8 (free fix, no #if).
 
 /**
  * Extractor for UScriptStruct (structures)

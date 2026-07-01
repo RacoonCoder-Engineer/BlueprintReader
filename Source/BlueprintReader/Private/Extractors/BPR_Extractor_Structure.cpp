@@ -2,7 +2,7 @@
 
 #include "Extractors/BPR_Extractor_Structure.h"
 #include "UObject/UnrealType.h"
-#include "Engine/UserDefinedStruct.h"
+#include "StructUtils/UserDefinedStruct.h"   // M6: canonical path, works on both 5.7 and 5.8
 
 BPR_Extractor_Structure::BPR_Extractor_Structure()
 {

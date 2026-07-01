@@ -49,10 +49,10 @@ public class BlueprintReader : ModuleRules
 					"WorkspaceMenuStructure",
 					"UMG",
 					"EditorStyle",
-					"DesktopPlatform",   // M4.2: native SaveFileDialog for export
-					"StateTreeModule",
-					"GameplayStateTreeModule",
-					"StateTreeEditorModule"
+					"DesktopPlatform"   // M4.2: native SaveFileDialog for export
+					// M6.0b: StateTreeModule/GameplayStateTreeModule/StateTreeEditorModule removed —
+					// unused in the codebase, vestigial dependency, link-risk on a 5.8 host without
+					// the StateTree plugin enabled.
 				}
 			);
 		}
