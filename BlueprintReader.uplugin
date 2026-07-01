@@ -2,6 +2,7 @@
 	"FileVersion": 3,
 	"Version": 1,
 	"VersionName": "0.1",
+	"EngineVersion": "5.7.0",
 	"FriendlyName": "BlueprintReader",
 	"Description": "Extracts Blueprint structure, graph and widget design data into Markdown for AI assistants and documentation. Single-source, supports Unreal Engine 5.7 and 5.8 (EngineVersion managed at packaging time).",
 	"FabURL": "com.epicgames.launcher://ue/Fab/product/562ab219-d38e-413c-89a1-a9c1b09a5b97",
